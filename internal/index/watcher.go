@@ -61,8 +61,9 @@ func (w *watcher) handle(event fsnotify.Event) {
 			return
 		}
 		if info.IsDir() {
-			if w.idx.filter.EnterDir(event.Name) {
-				files, dirs := walk([]string{event.Name}, w.idx.filter)
+			filter := w.idx.currentFilter()
+			if filter.EnterDir(event.Name) {
+				files, dirs := walk([]string{event.Name}, filter)
 				for _, e := range files {
 					w.idx.add(e.Path)
 				}

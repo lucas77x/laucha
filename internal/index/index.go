@@ -34,7 +34,7 @@ type Index struct {
 // New opens the on-disk index and starts the background reconcile
 // walk and the filesystem watchers. Search works immediately on the
 // previously indexed data.
-func New(search config.Search, filterCfg config.Filter) (*Index, error) {
+func New(roots []string, filterCfg config.Filter) (*Index, error) {
 	dbPath, err := dataPath()
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func New(search config.Search, filterCfg config.Filter) (*Index, error) {
 
 	idx := &Index{
 		filter: NewFilter(filterCfg),
-		roots:  expandRoots(search.Roots),
+		roots:  expandRoots(roots),
 		store:  st,
 		byPath: map[string]launcher.Entry{},
 		dirty:  true,
@@ -107,10 +107,37 @@ func (i *Index) Close() error {
 	return i.store.close()
 }
 
+// Reconfigure applies new roots and filters at runtime: watchers are
+// rebuilt and a fresh walk replaces the index, while search keeps
+// serving the previous data until the walk lands.
+func (i *Index) Reconfigure(roots []string, filterCfg config.Filter) {
+	if i.watcher != nil {
+		i.watcher.close()
+		i.watcher = nil
+	}
+	i.mu.Lock()
+	i.roots = expandRoots(roots)
+	i.filter = NewFilter(filterCfg)
+	i.mu.Unlock()
+
+	go i.reconcile()
+}
+
+// currentFilter snapshots the filter for event goroutines.
+func (i *Index) currentFilter() *Filter {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	return i.filter
+}
+
 // reconcile replaces memory and store with a fresh walk while the UI
 // keeps searching the previously loaded data.
 func (i *Index) reconcile() {
-	files, dirs := walk(i.roots, i.filter)
+	i.mu.RLock()
+	roots, filter := i.roots, i.filter
+	i.mu.RUnlock()
+
+	files, dirs := walk(roots, filter)
 
 	i.mu.Lock()
 	i.byPath = make(map[string]launcher.Entry, len(files))
@@ -139,7 +166,7 @@ func (i *Index) add(path string) {
 	if err != nil || !info.Mode().IsRegular() {
 		return
 	}
-	if !i.filter.IncludeFile(path) {
+	if !i.currentFilter().IncludeFile(path) {
 		return
 	}
 	entry := launcher.Entry{
