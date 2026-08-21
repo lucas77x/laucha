@@ -25,6 +25,28 @@ func TestLoadCreatesDefaults(t *testing.T) {
 	}
 }
 
+func TestEffectiveSearchSettings(t *testing.T) {
+	cfg := Default()
+	cfg.Search.Roots = []string{"/custom/root"}
+	cfg.Filter.Names = []string{"custom-name"}
+
+	cfg.Search.Advanced = false
+	if got := cfg.EffectiveRoots()[0]; got != "~" {
+		t.Errorf("default EffectiveRoots = %q, want built-in ~", got)
+	}
+	if got := cfg.EffectiveFilter().Names[0]; got == "custom-name" {
+		t.Error("default EffectiveFilter must ignore custom names")
+	}
+
+	cfg.Search.Advanced = true
+	if got := cfg.EffectiveRoots()[0]; got != "/custom/root" {
+		t.Errorf("advanced EffectiveRoots = %q, want /custom/root", got)
+	}
+	if got := cfg.EffectiveFilter().Names[0]; got != "custom-name" {
+		t.Errorf("advanced EffectiveFilter names = %q, want custom-name", got)
+	}
+}
+
 func TestLoadClampsMaxItems(t *testing.T) {
 	tests := []struct {
 		name string

@@ -45,9 +45,10 @@ type Behavior struct {
 }
 
 type Search struct {
-	Apps  bool     `toml:"apps"`
-	Files bool     `toml:"files"`
-	Roots []string `toml:"roots"`
+	Apps     bool     `toml:"apps"`
+	Files    bool     `toml:"files"`
+	Advanced bool     `toml:"advanced"` // custom roots/filter override the defaults
+	Roots    []string `toml:"roots"`
 }
 
 // Filter controls what the file indexer skips (mode "exclude") or the
@@ -90,6 +91,25 @@ func Default() Config {
 			},
 		},
 	}
+}
+
+// EffectiveRoots returns the indexed roots: the built-in defaults
+// unless the advanced search configuration is enabled. Keeping the
+// defaults out of the user file lets future versions improve them
+// for everyone still on the default configuration.
+func (c Config) EffectiveRoots() []string {
+	if c.Search.Advanced {
+		return c.Search.Roots
+	}
+	return Default().Search.Roots
+}
+
+// EffectiveFilter returns the active filter under the same rule.
+func (c Config) EffectiveFilter() Filter {
+	if c.Search.Advanced {
+		return c.Filter
+	}
+	return Default().Filter
 }
 
 // Path returns the config file location, creating its directory.
