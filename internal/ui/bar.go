@@ -65,6 +65,13 @@ type Bar struct {
 }
 
 func New(cfg config.Config, deps Deps) *Bar {
+	appIcon := fyne.NewStaticResource("icon.svg", assets.IconSVG)
+	app.SetMetadata(fyne.AppMetadata{
+		ID:      "com.github.lucas77x.laucha",
+		Name:    "laucha",
+		Version: "0.1.0",
+		Icon:    appIcon,
+	})
 	b := &Bar{
 		app:     app.NewWithID("com.github.lucas77x.laucha"),
 		cfg:     cfg,
@@ -72,7 +79,7 @@ func New(cfg config.Config, deps Deps) *Bar {
 		recents: deps.Recents,
 		usage:   deps.Usage,
 	}
-	b.app.SetIcon(fyne.NewStaticResource("icon.svg", assets.IconSVG))
+	b.app.SetIcon(appIcon)
 	b.win = b.newWindow()
 	b.input = newSearchEntry(b.handleKey)
 	b.input.SetPlaceHolder(i18n.T("Search apps and files…"))
