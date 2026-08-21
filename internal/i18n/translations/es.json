@@ -22,9 +22,6 @@
   "Window width": "Ancho de ventana",
   "Visible items": "Elementos visibles",
   "Skin": "Skin",
-  "Save": "Guardar",
-  "Saved": "Guardado",
-  "Invalid hotkey": "Atajo inválido",
   "Saved — some changes apply after restart": "Guardado — algunos cambios aplican al reiniciar",
   "Check for updates": "Buscar actualizaciones",
   "Checking…": "Comprobando…",
@@ -46,6 +43,5 @@
   "Patterns (regex, one per line)": "Patrones (regex, uno por línea)",
   "Restore defaults": "Restaurar valores por defecto",
   "Invalid pattern": "Patrón inválido",
-  "Saved — reindexing in the background": "Guardado — reindexando en segundo plano",
   "Press the shortcut…": "Presiona el atajo…"
 }

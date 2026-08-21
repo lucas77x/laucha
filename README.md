@@ -35,7 +35,7 @@ Every launcher kept forgetting where things are. laucha keeps a **persistent ind
 - **Resident**: global hotkey (`ctrl+space`) toggles the bar instantly; system tray icon with dynamic menu; Esc, launching or losing focus just hide it
 - **Single instance** — launching the binary again shows the running bar in ~25ms
 - **Skinnable** — drop-in skin folders; two built-ins (`default-dark`, `default-light`); switching applies live
-- **Settings window** with vertical tabs; changes apply immediately (only the language needs a restart)
+- **Settings window** with vertical tabs; every change saves and applies automatically — no Save button (only the language needs a restart)
 - **Search filters UI** — default configuration that improves with every update, or full advanced control: indexed folders, exclude/include-only mode, extensions, names and regex patterns, with live reindexing
 - **Hotkey capture** — click the field and press the combination; no typing
 - **Translatable** — English and Spanish today; a new language is one JSON file

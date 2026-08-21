@@ -22,9 +22,6 @@
   "Window width": "Window width",
   "Visible items": "Visible items",
   "Skin": "Skin",
-  "Save": "Save",
-  "Saved": "Saved",
-  "Invalid hotkey": "Invalid hotkey",
   "Saved — some changes apply after restart": "Saved — some changes apply after restart",
   "Check for updates": "Check for updates",
   "Checking…": "Checking…",
@@ -46,6 +43,5 @@
   "Patterns (regex, one per line)": "Patterns (regex, one per line)",
   "Restore defaults": "Restore defaults",
   "Invalid pattern": "Invalid pattern",
-  "Saved — reindexing in the background": "Saved — reindexing in the background",
   "Press the shortcut…": "Press the shortcut…"
 }

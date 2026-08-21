@@ -22,7 +22,8 @@ import (
 )
 
 // showSettings opens the Settings window, or refocuses it when
-// already open. Vertical tabs keep room to grow.
+// already open. Every change saves and applies automatically; the
+// status line only surfaces errors and the language restart notice.
 func (b *Bar) showSettings() {
 	if b.settings != nil {
 		b.settings.Show()
@@ -30,17 +31,83 @@ func (b *Bar) showSettings() {
 		return
 	}
 
-	cfg := b.cfg // working copy; written back on Save
 	defaults := config.Default()
+	loading := false // guards programmatic SetSelected/SetChecked
+
+	status := widget.NewLabel("")
+	var statusGen int
+	showStatus := func(text string, importance widget.Importance) {
+		statusGen++
+		generation := statusGen
+		status.Importance = importance
+		status.SetText(text)
+		time.AfterFunc(4*time.Second, func() {
+			fyne.Do(func() {
+				if generation == statusGen {
+					status.SetText("")
+				}
+			})
+		})
+	}
+
+	// commit mutates a copy of the live config, persists it and
+	// applies every side effect: live settings, autostart entry and
+	// reindexing when the effective search settings changed.
+	commit := func(mutate func(*config.Config)) {
+		old := b.cfg
+		next := b.cfg
+		mutate(&next)
+		next.Clamp()
+		if reflect.DeepEqual(old, next) {
+			return
+		}
+		if err := next.Save(); err != nil {
+			showStatus(err.Error(), widget.DangerImportance)
+			return
+		}
+		b.cfg = next
+		b.applyLive(old)
+		if next.Behavior.Autostart != old.Behavior.Autostart {
+			if err := autostart.Sync(next.Behavior.Autostart); err != nil {
+				log.Printf("autostart: %v", err)
+			}
+		}
+		if b.reindex != nil &&
+			(!reflect.DeepEqual(old.EffectiveRoots(), next.EffectiveRoots()) ||
+				!reflect.DeepEqual(old.EffectiveFilter(), next.EffectiveFilter())) {
+			b.reindex.Reconfigure(next.EffectiveRoots(), next.EffectiveFilter())
+		}
+		if next.Language != old.Language {
+			showStatus(i18n.T("Saved — some changes apply after restart"), widget.WarningImportance)
+		}
+	}
 
 	// General
 	language := widget.NewSelect([]string{i18n.T("System"), "English", "Español"}, nil)
-	language.SetSelected(languageLabel(cfg.Language))
-	hotkey := newHotkeyCapture(cfg.Hotkey, b.suspendHotkey, b.resumeHotkey)
-	autostartCheck := widget.NewCheck(i18n.T("Start at login"), nil)
-	autostartCheck.SetChecked(cfg.Behavior.Autostart)
-	startHiddenCheck := widget.NewCheck(i18n.T("Start minimized"), nil)
-	startHiddenCheck.SetChecked(cfg.Behavior.StartHidden)
+	language.SetSelected(languageLabel(b.cfg.Language))
+	language.OnChanged = func(selected string) {
+		if !loading {
+			commit(func(c *config.Config) { c.Language = languageCode(selected) })
+		}
+	}
+	hotkey := newHotkeyCapture(b.cfg.Hotkey, b.suspendHotkey, b.resumeHotkey)
+	hotkey.onCaptured = func(combo string) {
+		commit(func(c *config.Config) { c.Hotkey = combo })
+	}
+	newCheck := func(label string, checked bool, apply func(*config.Config, bool)) *widget.Check {
+		check := widget.NewCheck(label, nil)
+		check.SetChecked(checked)
+		check.OnChanged = func(on bool) {
+			if !loading {
+				commit(func(c *config.Config) { apply(c, on) })
+			}
+		}
+		return check
+	}
+	autostartCheck := newCheck(i18n.T("Start at login"), b.cfg.Behavior.Autostart,
+		func(c *config.Config, on bool) { c.Behavior.Autostart = on })
+	startHiddenCheck := newCheck(i18n.T("Start minimized"), b.cfg.Behavior.StartHidden,
+		func(c *config.Config, on bool) { c.Behavior.StartHidden = on })
 	general := container.NewVBox(
 		widget.NewForm(
 			widget.NewFormItem(i18n.T("Language"), fraction(language, 0.6)),
@@ -50,38 +117,68 @@ func (b *Bar) showSettings() {
 	)
 
 	// Behavior
-	recentCheck := widget.NewCheck(i18n.T("Show recent files on open"), nil)
-	recentCheck.SetChecked(cfg.Behavior.ShowRecentOnOpen)
-	minimizeCheck := widget.NewCheck(i18n.T("Minimize on close"), nil)
-	minimizeCheck.SetChecked(cfg.Behavior.MinimizeOnClose)
-	focusCheck := widget.NewCheck(i18n.T("Hide on focus loss"), nil)
-	focusCheck.SetChecked(cfg.Behavior.HideOnFocusLost)
-	trayCheck := widget.NewCheck(i18n.T("Show tray icon"), b.setTrayVisible)
-	trayCheck.SetChecked(cfg.Behavior.ShowTrayIcon)
+	recentCheck := newCheck(i18n.T("Show recent files on open"), b.cfg.Behavior.ShowRecentOnOpen,
+		func(c *config.Config, on bool) { c.Behavior.ShowRecentOnOpen = on })
+	minimizeCheck := newCheck(i18n.T("Minimize on close"), b.cfg.Behavior.MinimizeOnClose,
+		func(c *config.Config, on bool) { c.Behavior.MinimizeOnClose = on })
+	focusCheck := newCheck(i18n.T("Hide on focus loss"), b.cfg.Behavior.HideOnFocusLost,
+		func(c *config.Config, on bool) { c.Behavior.HideOnFocusLost = on })
+	trayCheck := newCheck(i18n.T("Show tray icon"), b.cfg.Behavior.ShowTrayIcon,
+		func(c *config.Config, on bool) { c.Behavior.ShowTrayIcon = on })
 	behavior := container.NewVBox(recentCheck, minimizeCheck, focusCheck, trayCheck)
 
 	// Search
-	appsCheck := widget.NewCheck(i18n.T("Search applications"), nil)
-	appsCheck.SetChecked(cfg.Search.Apps)
-	filesCheck := widget.NewCheck(i18n.T("Search files"), nil)
-	filesCheck.SetChecked(cfg.Search.Files)
+	appsCheck := newCheck(i18n.T("Search applications"), b.cfg.Search.Apps,
+		func(c *config.Config, on bool) { c.Search.Apps = on })
+	filesCheck := newCheck(i18n.T("Search files"), b.cfg.Search.Files,
+		func(c *config.Config, on bool) { c.Search.Files = on })
 
 	defaultLabel := i18n.T("Default search configuration")
 	advancedLabel := i18n.T("Advanced search configuration")
 	excludeLabel := i18n.T("Exclude listed")
 	includeLabel := i18n.T("Include only listed")
 
-	advancedOn := cfg.Search.Advanced
+	advancedOn := b.cfg.Search.Advanced
 	rootsVals := []string{}
 	rootsBox := container.NewVBox()
 
 	filterModeRadio := widget.NewRadioGroup([]string{excludeLabel, includeLabel}, nil)
 	filterModeRadio.Horizontal = true
-	extensionsEntry := widget.NewEntry()
-	namesEntry := widget.NewEntry()
-	patternsEntry := widget.NewMultiLineEntry()
+	extensionsEntry := newCommitEntry(false)
+	namesEntry := newCommitEntry(false)
+	patternsEntry := newCommitEntry(true)
 	patternsEntry.SetMinRowsVisible(4)
 	patternsEntry.Wrapping = fyne.TextWrapOff // long regexes scroll horizontally
+
+	// commitSearch persists the whole advanced state from the
+	// current field values; invalid regexes block the save.
+	commitSearch := func() {
+		patterns := nonEmptyLines(patternsEntry.Text)
+		for _, pattern := range patterns {
+			if _, err := regexp.Compile(pattern); err != nil {
+				showStatus(i18n.T("Invalid pattern")+": "+pattern, widget.DangerImportance)
+				return
+			}
+		}
+		commit(func(c *config.Config) {
+			c.Search.Advanced = advancedOn
+			if !advancedOn {
+				return
+			}
+			c.Search.Roots = append([]string{}, rootsVals...)
+			if len(c.Search.Roots) == 0 {
+				c.Search.Roots = defaults.Search.Roots
+			}
+			if filterModeRadio.Selected == includeLabel {
+				c.Filter.Mode = "include-only"
+			} else {
+				c.Filter.Mode = "exclude"
+			}
+			c.Filter.Extensions = splitCommaList(extensionsEntry.Text)
+			c.Filter.Names = splitCommaList(namesEntry.Text)
+			c.Filter.Patterns = patterns
+		})
+	}
 
 	var refreshRoots func()
 	addRoot := widget.NewButtonWithIcon(i18n.T("Add folder"), theme.FolderNewIcon(), func() {
@@ -91,6 +188,7 @@ func (b *Bar) showSettings() {
 			}
 			rootsVals = append(rootsVals, uri.Path())
 			refreshRoots()
+			commitSearch()
 		}, b.settings)
 	})
 	refreshRoots = func() {
@@ -100,6 +198,7 @@ func (b *Bar) showSettings() {
 			remove := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 				rootsVals = append(rootsVals[:at], rootsVals[at+1:]...)
 				refreshRoots()
+				commitSearch()
 			})
 			rootsBox.Add(container.NewBorder(nil, nil, nil, remove, widget.NewLabel(root)))
 		}
@@ -107,6 +206,7 @@ func (b *Bar) showSettings() {
 	}
 
 	populate := func(src config.Config) {
+		loading = true
 		rootsVals = append([]string{}, src.Search.Roots...)
 		extensionsEntry.SetText(strings.Join(src.Filter.Extensions, ", "))
 		namesEntry.SetText(strings.Join(src.Filter.Names, ", "))
@@ -117,10 +217,21 @@ func (b *Bar) showSettings() {
 			filterModeRadio.SetSelected(excludeLabel)
 		}
 		refreshRoots()
+		loading = false
 	}
+
+	filterModeRadio.OnChanged = func(string) {
+		if !loading {
+			commitSearch()
+		}
+	}
+	extensionsEntry.onCommit = func(string) { commitSearch() }
+	namesEntry.onCommit = func(string) { commitSearch() }
+	patternsEntry.onCommit = func(string) { commitSearch() }
 
 	restore := widget.NewButton(i18n.T("Restore defaults"), func() {
 		populate(defaults)
+		commitSearch()
 	})
 
 	rootsBg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
@@ -155,23 +266,29 @@ func (b *Bar) showSettings() {
 	}
 
 	configRadio := widget.NewRadioGroup([]string{defaultLabel, advancedLabel}, nil)
-	if cfg.Search.Advanced {
-		populate(cfg)
+	loading = true
+	if b.cfg.Search.Advanced {
+		populate(b.cfg)
 		configRadio.SetSelected(advancedLabel)
 	} else {
 		populate(defaults)
 		configRadio.SetSelected(defaultLabel)
 	}
-	setAdvanced(cfg.Search.Advanced)
+	loading = false
+	setAdvanced(b.cfg.Search.Advanced)
 	configRadio.OnChanged = func(selected string) {
+		if loading {
+			return
+		}
 		on := selected == advancedLabel
-		if on && cfg.Search.Advanced {
-			populate(cfg) // bring back the saved customization
+		if on && b.cfg.Search.Advanced {
+			populate(b.cfg) // bring back the saved customization
 		}
 		if !on {
 			populate(defaults)
 		}
 		setAdvanced(on)
+		commitSearch()
 	}
 
 	searchTab := container.NewScroll(container.NewVBox(
@@ -183,12 +300,34 @@ func (b *Bar) showSettings() {
 	))
 
 	// Display
-	width := widget.NewEntry()
-	width.SetText(strconv.Itoa(int(cfg.Window.Width)))
+	width := newCommitEntry(false)
+	width.SetText(strconv.Itoa(int(b.cfg.Window.Width)))
+	width.onCommit = func(text string) {
+		v, err := strconv.Atoi(strings.TrimSpace(text))
+		if err != nil {
+			width.SetText(strconv.Itoa(int(b.cfg.Window.Width)))
+			return
+		}
+		commit(func(c *config.Config) { c.Window.Width = float32(v) })
+		width.SetText(strconv.Itoa(int(b.cfg.Window.Width))) // reflect clamping
+	}
 	items := widget.NewSelect([]string{"3", "4", "5", "6", "7", "8", "9", "10"}, nil)
-	items.SetSelected(strconv.Itoa(cfg.Window.MaxItems))
+	items.SetSelected(strconv.Itoa(b.cfg.Window.MaxItems))
+	items.OnChanged = func(selected string) {
+		if loading {
+			return
+		}
+		if v, err := strconv.Atoi(selected); err == nil {
+			commit(func(c *config.Config) { c.Window.MaxItems = v })
+		}
+	}
 	skinSelect := widget.NewSelect(skin.Available(), nil)
-	skinSelect.SetSelected(cfg.Window.Skin)
+	skinSelect.SetSelected(b.cfg.Window.Skin)
+	skinSelect.OnChanged = func(selected string) {
+		if !loading {
+			commit(func(c *config.Config) { c.Window.Skin = selected })
+		}
+	}
 	display := container.NewVBox(widget.NewForm(
 		widget.NewFormItem(i18n.T("Window width"), fraction(width, 0.4)),
 		widget.NewFormItem(i18n.T("Visible items"), fraction(items, 0.4)),
@@ -204,109 +343,8 @@ func (b *Bar) showSettings() {
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
-	status := widget.NewLabel("")
-	var statusGen int
-	showStatus := func(text string, importance widget.Importance) {
-		statusGen++
-		generation := statusGen
-		status.Importance = importance
-		status.SetText(text)
-		time.AfterFunc(4*time.Second, func() {
-			fyne.Do(func() {
-				if generation == statusGen {
-					status.SetText("")
-				}
-			})
-		})
-	}
-	// A captured combo saves itself quietly: no Save button, no
-	// status message — the field just shows the new shortcut.
-	hotkey.onCaptured = func(combo string) {
-		cfg.Hotkey = combo
-		b.cfg.Hotkey = combo
-		if err := b.cfg.Save(); err != nil {
-			showStatus(err.Error(), widget.DangerImportance)
-		}
-	}
-
-	save := widget.NewButton(i18n.T("Save"), func() {
-		if _, _, err := parseHotkey(hotkey.Text); err != nil {
-			showStatus(i18n.T("Invalid hotkey"), widget.DangerImportance)
-			return
-		}
-		old := b.cfg
-		cfg.Language = languageCode(language.Selected)
-		cfg.Hotkey = hotkey.Text
-		cfg.Behavior.Autostart = autostartCheck.Checked
-		cfg.Behavior.StartHidden = startHiddenCheck.Checked
-		cfg.Search.Apps = appsCheck.Checked
-		cfg.Search.Files = filesCheck.Checked
-		cfg.Behavior.ShowRecentOnOpen = recentCheck.Checked
-		cfg.Behavior.MinimizeOnClose = minimizeCheck.Checked
-		cfg.Behavior.HideOnFocusLost = focusCheck.Checked
-		cfg.Behavior.ShowTrayIcon = trayCheck.Checked
-		cfg.Search.Advanced = advancedOn
-		if advancedOn {
-			patterns := nonEmptyLines(patternsEntry.Text)
-			for _, pattern := range patterns {
-				if _, err := regexp.Compile(pattern); err != nil {
-					showStatus(i18n.T("Invalid pattern")+": "+pattern, widget.DangerImportance)
-					return
-				}
-			}
-			cfg.Search.Roots = append([]string{}, rootsVals...)
-			if len(cfg.Search.Roots) == 0 {
-				cfg.Search.Roots = defaults.Search.Roots
-			}
-			if filterModeRadio.Selected == includeLabel {
-				cfg.Filter.Mode = "include-only"
-			} else {
-				cfg.Filter.Mode = "exclude"
-			}
-			cfg.Filter.Extensions = splitCommaList(extensionsEntry.Text)
-			cfg.Filter.Names = splitCommaList(namesEntry.Text)
-			cfg.Filter.Patterns = patterns
-		}
-		if v, err := strconv.Atoi(width.Text); err == nil {
-			cfg.Window.Width = float32(v)
-		}
-		if v, err := strconv.Atoi(items.Selected); err == nil {
-			cfg.Window.MaxItems = v
-		}
-		cfg.Window.Skin = skinSelect.Selected
-		cfg.Clamp()
-
-		if err := cfg.Save(); err != nil {
-			showStatus(err.Error(), widget.DangerImportance)
-			return
-		}
-		if err := autostart.Sync(cfg.Behavior.Autostart); err != nil {
-			log.Printf("autostart: %v", err)
-		}
-		b.cfg = cfg
-		b.applyLive(old)
-		width.SetText(strconv.Itoa(int(cfg.Window.Width)))
-
-		reindexing := false
-		if b.reindex != nil &&
-			(!reflect.DeepEqual(old.EffectiveRoots(), cfg.EffectiveRoots()) ||
-				!reflect.DeepEqual(old.EffectiveFilter(), cfg.EffectiveFilter())) {
-			b.reindex.Reconfigure(cfg.EffectiveRoots(), cfg.EffectiveFilter())
-			reindexing = true
-		}
-
-		switch {
-		case cfg.Language != old.Language:
-			showStatus("✅ "+i18n.T("Saved — some changes apply after restart"), widget.WarningImportance)
-		case reindexing:
-			showStatus("✅ "+i18n.T("Saved — reindexing in the background"), widget.SuccessImportance)
-		default:
-			showStatus("✅ "+i18n.T("Saved"), widget.SuccessImportance)
-		}
-	})
-
 	w := b.app.NewWindow(i18n.T("Settings"))
-	w.SetContent(container.NewBorder(nil, container.NewVBox(status, save), nil, nil, tabs))
+	w.SetContent(container.NewBorder(nil, status, nil, nil, tabs))
 	w.Resize(fyne.NewSize(680, 500))
 	w.CenterOnScreen()
 	w.SetOnClosed(func() { b.settings = nil })
