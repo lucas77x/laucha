@@ -6,7 +6,9 @@ import (
 	"errors"
 	"image/color"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -429,8 +431,10 @@ func (b *Bar) openSelected() {
 }
 
 // open launches an app detached from laucha, or a file with the
-// desktop's default handler. Commands run directly, never through a
-// shell.
+// desktop's default handler. Executable files (AppImages, scripts
+// the user marked +x) run directly — xdg-open would hand them to a
+// viewer instead of executing them. Commands run directly, never
+// through a shell.
 func open(entry launcher.Entry) error {
 	var cmd *exec.Cmd
 	switch entry.Kind {
@@ -444,10 +448,31 @@ func open(entry launcher.Entry) error {
 		}
 		cmd = exec.Command(argv[0], argv[1:]...)
 	default:
+		if isExecutable(entry.Path) {
+			cmd = exec.Command(entry.Path)
+			cmd.Dir = filepath.Dir(entry.Path)
+			cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+			if err := cmd.Start(); err == nil {
+				return nil
+			}
+			// Executable bit without an executable format (data files
+			// on FAT mounts, scripts without shebang): fall back to
+			// the default handler.
+		}
 		cmd = exec.Command("xdg-open", entry.Path)
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	return cmd.Start()
+}
+
+// isExecutable reports whether path is a regular file with any
+// execute bit set.
+func isExecutable(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular() && info.Mode().Perm()&0o111 != 0
 }
 
 // searchEntry lets the bar intercept navigation keys while normal
