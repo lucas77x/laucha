@@ -49,6 +49,25 @@ func (b *Bar) rebindHotkey() {
 	b.hotkeyActive = b.bindHotkey(b.cfg.Hotkey)
 }
 
+// suspendHotkey releases the global grab while the capture field
+// records — otherwise the active combination could never be captured:
+// the app's own grab would swallow it.
+func (b *Bar) suspendHotkey() {
+	if b.unbindHotkey != nil {
+		b.unbindHotkey()
+		b.unbindHotkey = nil
+		b.hotkeyActive = false
+	}
+}
+
+// resumeHotkey restores the configured global grab after capturing.
+func (b *Bar) resumeHotkey() {
+	if b.unbindHotkey == nil {
+		b.hotkeyActive = b.bindHotkey(b.cfg.Hotkey)
+		b.resident = b.trayActive || b.hotkeyActive
+	}
+}
+
 // parseHotkey turns a spec such as "ctrl+space" or "super+shift+p"
 // into the modifiers and key the hotkey library expects.
 func parseHotkey(spec string) ([]hotkey.Modifier, hotkey.Key, error) {

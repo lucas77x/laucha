@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
@@ -35,7 +36,7 @@ func (b *Bar) showSettings() {
 	// General
 	language := widget.NewSelect([]string{i18n.T("System"), "English", "Español"}, nil)
 	language.SetSelected(languageLabel(cfg.Language))
-	hotkey := newHotkeyCapture(cfg.Hotkey)
+	hotkey := newHotkeyCapture(cfg.Hotkey, b.suspendHotkey, b.resumeHotkey)
 	autostartCheck := widget.NewCheck(i18n.T("Start at login"), nil)
 	autostartCheck.SetChecked(cfg.Behavior.Autostart)
 	startHiddenCheck := widget.NewCheck(i18n.T("Start minimized"), nil)
@@ -65,8 +66,8 @@ func (b *Bar) showSettings() {
 	filesCheck := widget.NewCheck(i18n.T("Search files"), nil)
 	filesCheck.SetChecked(cfg.Search.Files)
 
-	defaultLabel := i18n.T("Default configuration")
-	advancedLabel := i18n.T("Advanced configuration")
+	defaultLabel := i18n.T("Default search configuration")
+	advancedLabel := i18n.T("Advanced search configuration")
 	excludeLabel := i18n.T("Exclude listed")
 	includeLabel := i18n.T("Include only listed")
 
@@ -80,6 +81,7 @@ func (b *Bar) showSettings() {
 	namesEntry := widget.NewEntry()
 	patternsEntry := widget.NewMultiLineEntry()
 	patternsEntry.SetMinRowsVisible(4)
+	patternsEntry.Wrapping = fyne.TextWrapOff // long regexes scroll horizontally
 
 	var refreshRoots func()
 	addRoot := widget.NewButtonWithIcon(i18n.T("Add folder"), theme.FolderNewIcon(), func() {
@@ -99,9 +101,6 @@ func (b *Bar) showSettings() {
 				rootsVals = append(rootsVals[:at], rootsVals[at+1:]...)
 				refreshRoots()
 			})
-			if !advancedOn {
-				remove.Disable()
-			}
 			rootsBox.Add(container.NewBorder(nil, nil, nil, remove, widget.NewLabel(root)))
 		}
 		rootsBox.Refresh()
@@ -124,20 +123,36 @@ func (b *Bar) showSettings() {
 		populate(defaults)
 	})
 
-	setAdvanced := func(on bool) {
-		advancedOn = on
-		for _, w := range []fyne.Disableable{filterModeRadio, extensionsEntry, namesEntry, patternsEntry, addRoot, restore} {
-			if on {
-				w.Enable()
-			} else {
-				w.Disable()
-			}
-		}
-		refreshRoots()
-	}
+	rootsBg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
+	rootsBg.CornerRadius = 8
+	rootsArea := fractionCentered(container.NewStack(rootsBg, container.NewPadded(rootsBox)), 0.7)
 
 	advNote := widget.NewLabel(i18n.T("Advanced settings replace the defaults"))
 	advNote.TextStyle = fyne.TextStyle{Italic: true}
+
+	advancedBox := container.NewVBox(
+		widget.NewSeparator(),
+		widget.NewLabel(i18n.T("Indexed folders")),
+		rootsArea,
+		container.NewCenter(addRoot),
+		widget.NewForm(
+			widget.NewFormItem(i18n.T("Filter mode"), filterModeRadio),
+			widget.NewFormItem(i18n.T("Extensions"), fraction(extensionsEntry, 0.6)),
+			widget.NewFormItem(i18n.T("Names"), fraction(namesEntry, 0.6)),
+		),
+		widget.NewLabel(i18n.T("Patterns (regex, one per line)")),
+		fractionCentered(patternsEntry, 0.7),
+		container.NewCenter(restore),
+	)
+
+	setAdvanced := func(on bool) {
+		advancedOn = on
+		if on {
+			advancedBox.Show()
+		} else {
+			advancedBox.Hide()
+		}
+	}
 
 	configRadio := widget.NewRadioGroup([]string{defaultLabel, advancedLabel}, nil)
 	if cfg.Search.Advanced {
@@ -164,18 +179,7 @@ func (b *Bar) showSettings() {
 		widget.NewSeparator(),
 		configRadio,
 		advNote,
-		widget.NewSeparator(),
-		widget.NewLabel(i18n.T("Indexed folders")),
-		rootsBox,
-		container.NewHBox(addRoot),
-		widget.NewForm(
-			widget.NewFormItem(i18n.T("Filter mode"), filterModeRadio),
-			widget.NewFormItem(i18n.T("Extensions"), fraction(extensionsEntry, 0.6)),
-			widget.NewFormItem(i18n.T("Names"), fraction(namesEntry, 0.6)),
-		),
-		widget.NewLabel(i18n.T("Patterns (regex, one per line)")),
-		patternsEntry,
-		container.NewHBox(restore),
+		advancedBox,
 	))
 
 	// Display
@@ -293,7 +297,7 @@ func (b *Bar) showSettings() {
 
 	w := b.app.NewWindow(i18n.T("Settings"))
 	w.SetContent(container.NewBorder(nil, container.NewVBox(status, save), nil, nil, tabs))
-	w.Resize(fyne.NewSize(560, 480))
+	w.Resize(fyne.NewSize(640, 560))
 	w.CenterOnScreen()
 	w.SetOnClosed(func() { b.settings = nil })
 	b.settings = w

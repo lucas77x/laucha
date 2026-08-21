@@ -19,10 +19,12 @@ type hotkeyCapture struct {
 	mods      map[string]bool
 	previous  string
 	recording bool
+	onStart   func() // suspends the app's own global grab
+	onStop    func() // restores it
 }
 
-func newHotkeyCapture(current string) *hotkeyCapture {
-	h := &hotkeyCapture{mods: map[string]bool{}}
+func newHotkeyCapture(current string, onStart, onStop func()) *hotkeyCapture {
+	h := &hotkeyCapture{mods: map[string]bool{}, onStart: onStart, onStop: onStop}
 	h.ExtendBaseWidget(h)
 	h.SetText(current)
 	return h
@@ -32,16 +34,30 @@ func (h *hotkeyCapture) FocusGained() {
 	h.previous = h.Text
 	h.recording = true
 	h.mods = map[string]bool{}
+	if h.onStart != nil {
+		h.onStart()
+	}
 	h.SetText(i18n.T("Press the shortcut…"))
 	h.Entry.FocusGained()
 }
 
 func (h *hotkeyCapture) FocusLost() {
 	if h.recording {
-		h.recording = false
+		h.stop()
 		h.SetText(h.previous)
 	}
 	h.Entry.FocusLost()
+}
+
+// stop ends a recording session exactly once and restores the grab.
+func (h *hotkeyCapture) stop() {
+	if !h.recording {
+		return
+	}
+	h.recording = false
+	if h.onStop != nil {
+		h.onStop()
+	}
 }
 
 // TypedRune and TypedKey swallow input: combos come through KeyDown.
@@ -67,7 +83,7 @@ func (h *hotkeyCapture) KeyDown(key *fyne.KeyEvent) {
 		return
 	}
 	if key.Name == fyne.KeyEscape {
-		h.recording = false
+		h.stop()
 		h.SetText(h.previous)
 		return
 	}
@@ -75,8 +91,9 @@ func (h *hotkeyCapture) KeyDown(key *fyne.KeyEvent) {
 	if !ok || len(h.heldModifiers()) == 0 {
 		return
 	}
-	h.recording = false
-	h.SetText(strings.Join(append(h.heldModifiers(), token), "+"))
+	combo := strings.Join(append(h.heldModifiers(), token), "+")
+	h.stop()
+	h.SetText(combo)
 }
 
 func (h *hotkeyCapture) partial() string {
