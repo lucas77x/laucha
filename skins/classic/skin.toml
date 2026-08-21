@@ -1,27 +1,32 @@
 # Classic — the reference skin for laucha.
 #
-# A skin is a folder dropped into skins/<name>/ next to the binary.
-# "template" picks one of the predefined layouts the app knows how to
-# render; the rest of the file dresses that layout.
+# A skin is a folder dropped into skins/<name>/ next to the binary or
+# under ~/.config/laucha/skins/. "template" picks one of the layouts
+# the app knows how to render; the rest of the file dresses it.
+# Unset values fall back to the built-in classic look.
+#
+# The palette: warm charcoal surfaces (a wooden floor at night), warm
+# off-white text, and the mouse-ear rose as the single accent.
 
 name = "Classic"
 author = "laucha"
-version = "0.1.0"
+version = "1.0.0"
 template = "classic" # input on top, results below
 
 [colors]
-background = "#1E1E2E"
-foreground = "#CDD6F4"
-accent = "#89B4FA"
-selection = "#313244"
+background = "#1B191F"       # warm charcoal, never pure black
+foreground = "#E8E4DE"       # warm off-white
+muted = "#8A879B"            # dusk gray: file paths, placeholders
+accent = "#E8A0B4"           # mouse-ear rose: focus and highlights
+selection = "#3A2E36"        # rose-tinted charcoal for the chosen row
+input_background = "#141317" # inset: darker signals "type here"
 
 [font]
-# family = "MyFont.ttf" # optional, bundled inside the skin folder
-size = 14
+size = 15
 
 [rows]
-height = 44
-icon_size = 28
+height = 46
+icon_size = 30
 
 # [images]
-# background = "background.png" # optional, scaled to the window
+# background = "background.png" # optional, stretched to the window

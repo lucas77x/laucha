@@ -2,8 +2,6 @@ package ui
 
 import (
 	"log"
-	"os"
-	"path/filepath"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -12,6 +10,7 @@ import (
 
 	"github.com/lucas77x/laucha/internal/autostart"
 	"github.com/lucas77x/laucha/internal/i18n"
+	"github.com/lucas77x/laucha/internal/skin"
 )
 
 // showSettings opens the Settings window, or refocuses it when
@@ -62,7 +61,7 @@ func (b *Bar) showSettings() {
 	items.SetSelected(strconv.Itoa(cfg.Window.MaxItems))
 	themeSelect := widget.NewSelect([]string{i18n.T("System"), i18n.T("Light"), i18n.T("Dark")}, nil)
 	themeSelect.SetSelected(themeLabel(cfg.Window.Theme))
-	skinSelect := widget.NewSelect(availableSkins(), nil)
+	skinSelect := widget.NewSelect(skin.Available(), nil)
 	skinSelect.SetSelected(cfg.Window.Skin)
 	display := container.NewVBox(widget.NewForm(
 		widget.NewFormItem(i18n.T("Window width"), width),
@@ -176,24 +175,4 @@ func themeCode(label string) string {
 	default:
 		return "system"
 	}
-}
-
-// availableSkins lists the drop-in skin folders next to the binary;
-// classic is always present as the built-in reference skin.
-func availableSkins() []string {
-	names := []string{"classic"}
-	exe, err := os.Executable()
-	if err != nil {
-		return names
-	}
-	entries, err := os.ReadDir(filepath.Join(filepath.Dir(exe), "skins"))
-	if err != nil {
-		return names
-	}
-	for _, entry := range entries {
-		if entry.IsDir() && entry.Name() != "classic" {
-			names = append(names, entry.Name())
-		}
-	}
-	return names
 }

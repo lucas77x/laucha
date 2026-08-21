@@ -18,8 +18,13 @@ func (f *forcedVariant) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) col
 	return f.Theme.Color(name, f.variant)
 }
 
-// applyTheme applies the configured theme immediately.
+// applyTheme applies the loaded skin immediately; when the skin
+// cannot be loaded it falls back to the plain light/dark setting.
 func (b *Bar) applyTheme() {
+	if b.skin.Name != "" {
+		b.app.Settings().SetTheme(newSkinTheme(b.skin))
+		return
+	}
 	switch b.cfg.Window.Theme {
 	case "light":
 		b.app.Settings().SetTheme(&forcedVariant{Theme: theme.DefaultTheme(), variant: theme.VariantLight})

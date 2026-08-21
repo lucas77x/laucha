@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/lucas77x/laucha/assets"
@@ -21,12 +22,13 @@ import (
 	"github.com/lucas77x/laucha/internal/i18n"
 	"github.com/lucas77x/laucha/internal/launcher"
 	"github.com/lucas77x/laucha/internal/search"
+	"github.com/lucas77x/laucha/internal/skin"
 )
 
 const (
-	rowHeight  = 44 // refined by the skin engine later
-	iconSize   = 28
-	queryLimit = 50 // results kept for scrolling beyond the visible rows
+	defaultRowHeight = 46 // fallbacks when a skin omits [rows]
+	defaultIconSize  = 30
+	queryLimit       = 50 // results kept for scrolling beyond the visible rows
 )
 
 // RecentSource lists recently modified files for the empty-query
@@ -56,6 +58,7 @@ type Bar struct {
 	app      fyne.App
 	win      fyne.Window
 	cfg      config.Config
+	skin     skin.Skin
 	engine   *search.Engine
 	recents  RecentSource
 	usage    UsageRecorder
@@ -100,6 +103,7 @@ func New(cfg config.Config, deps Deps) *Bar {
 	if deps.Stats != nil {
 		b.engine.SetUsage(deps.Stats)
 	}
+	b.loadSkin()
 	b.app.SetIcon(appIcon)
 	b.win = b.newWindow()
 	b.win.SetTitle("laucha")
@@ -109,16 +113,50 @@ func New(cfg config.Config, deps Deps) *Bar {
 	b.list = b.newList()
 	b.list.OnSelected = func(id widget.ListItemID) { b.selected = id }
 
-	b.win.SetContent(container.NewBorder(b.input, nil, nil, nil, b.list))
+	gear := widget.NewButtonWithIcon("", theme.SettingsIcon(), b.showSettings)
+	gear.Importance = widget.LowImportance
+	top := container.NewBorder(nil, nil, nil, gear, b.input)
+	content := container.NewBorder(top, nil, nil, nil, b.list)
+	if bg := b.skin.BackgroundImagePath(); bg != "" {
+		image := canvas.NewImageFromFile(bg)
+		image.FillMode = canvas.ImageFillStretch
+		b.win.SetContent(container.NewStack(image, content))
+	} else {
+		b.win.SetContent(content)
+	}
 	b.resizeBar()
 	b.win.CenterOnScreen()
 	b.search("")
 	return b
 }
 
+// loadSkin loads the configured skin, falling back to the built-in
+// classic on error.
+func (b *Bar) loadSkin() {
+	s, err := skin.Load(b.cfg.Window.Skin)
+	if err != nil {
+		log.Printf("skin %q: %v (using classic)", b.cfg.Window.Skin, err)
+	}
+	b.skin = s
+}
+
+func (b *Bar) rowHeight() float32 {
+	if b.skin.Rows.Height > 0 {
+		return b.skin.Rows.Height
+	}
+	return defaultRowHeight
+}
+
+func (b *Bar) iconSize() float32 {
+	if b.skin.Rows.IconSize > 0 {
+		return b.skin.Rows.IconSize
+	}
+	return defaultIconSize
+}
+
 // resizeBar applies the configured width and visible rows.
 func (b *Bar) resizeBar() {
-	height := b.input.MinSize().Height + float32(b.cfg.Window.MaxItems)*rowHeight
+	height := b.input.MinSize().Height + float32(b.cfg.Window.MaxItems)*b.rowHeight()
 	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
 }
 
@@ -195,7 +233,7 @@ func (b *Bar) newList() *widget.List {
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromFile("")
 			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.NewSize(iconSize, iconSize))
+			icon.SetMinSize(fyne.NewSize(b.iconSize(), b.iconSize()))
 			path := widget.NewLabel("")
 			path.TextStyle = fyne.TextStyle{Italic: true}
 			return container.NewHBox(icon, widget.NewLabel(""), path)
@@ -257,6 +295,11 @@ func (b *Bar) applyLive(old config.Config) {
 		b.rebindHotkey()
 	}
 	if b.cfg.Window.Width != old.Window.Width || b.cfg.Window.MaxItems != old.Window.MaxItems {
+		b.resizeBar()
+	}
+	if b.cfg.Window.Skin != old.Window.Skin {
+		b.loadSkin()
+		b.applyTheme()
 		b.resizeBar()
 	}
 	if b.cfg.Behavior.ShowTrayIcon && !b.trayActive {
