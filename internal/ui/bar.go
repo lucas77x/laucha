@@ -32,6 +32,10 @@ const (
 	queryLimit       = 50 // results kept for scrolling beyond the visible rows
 )
 
+// Version is stamped by the release pipeline via -ldflags; dev builds
+// keep the suffix so update checks never downgrade anyone.
+var Version = "0.1.0-dev"
+
 // RecentSource lists recently modified files for the empty-query
 // view.
 type RecentSource interface {
@@ -89,7 +93,7 @@ func New(cfg config.Config, deps Deps) *Bar {
 	app.SetMetadata(fyne.AppMetadata{
 		ID:      "com.github.lucas77x.laucha",
 		Name:    "laucha",
-		Version: "0.1.0",
+		Version: Version,
 		Icon:    appIcon,
 	})
 	b := &Bar{
@@ -380,7 +384,11 @@ func open(entry launcher.Entry) error {
 		if len(entry.Exec) == 0 {
 			return errors.New("entry has no command")
 		}
-		cmd = exec.Command(entry.Exec[0], entry.Exec[1:]...)
+		argv := entry.Exec
+		if entry.Terminal {
+			argv = terminalCommand(argv)
+		}
+		cmd = exec.Command(argv[0], argv[1:]...)
 	default:
 		cmd = exec.Command("xdg-open", entry.Path)
 	}

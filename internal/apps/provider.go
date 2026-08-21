@@ -97,8 +97,7 @@ func parseDesktopFile(path string) (launcher.Entry, bool) {
 	launchable := fields["Type"] == "Application" &&
 		fields["Name"] != "" &&
 		fields["NoDisplay"] != "true" &&
-		fields["Hidden"] != "true" &&
-		fields["Terminal"] != "true" // terminal apps need a terminal wrapper; roadmap
+		fields["Hidden"] != "true"
 	if !launchable {
 		return launcher.Entry{}, false
 	}
@@ -109,11 +108,12 @@ func parseDesktopFile(path string) (launcher.Entry, bool) {
 	}
 
 	return launcher.Entry{
-		Kind: launcher.KindApp,
-		Name: fields["Name"],
-		Path: path,
-		Exec: argv,
-		Icon: resolveIcon(fields["Icon"]),
+		Kind:     launcher.KindApp,
+		Name:     fields["Name"],
+		Path:     path,
+		Exec:     argv,
+		Terminal: fields["Terminal"] == "true",
+		Icon:     resolveIcon(fields["Icon"]),
 	}, true
 }
 
