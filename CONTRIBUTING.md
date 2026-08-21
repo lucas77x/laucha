@@ -47,6 +47,15 @@ Guidelines:
 
 `third_party/systray` is a vendored dependency with two documented patches — sync carefully with upstream if you touch it.
 
+## Workflow
+
+laucha uses GitHub Flow — no develop branch:
+
+- `main` is always releasable; releases are tags on `main`.
+- Every change lives in a short branch (`feature/...`, `fix/...`, `docs/...`) and lands through a pull request with CI green.
+- External contributors: fork, branch, pull request.
+- Keep PRs focused — one change per PR reviews faster.
+
 ## Reporting issues
 
 Open a GitHub issue with your distribution, desktop environment (X11/Wayland), what you did, what you expected, and what happened. The log output from running `laucha` in a terminal helps a lot.

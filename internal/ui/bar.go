@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -66,16 +67,19 @@ type Deps struct {
 }
 
 type Bar struct {
-	app      fyne.App
-	win      fyne.Window
-	cfg      config.Config
-	skin     skin.Skin
-	engine   *search.Engine
-	recents  RecentSource
-	usage    UsageRecorder
-	reindex  Reconfigurer
-	input    *searchEntry
-	list     *widget.List
+	app        fyne.App
+	win        fyne.Window
+	cfg        config.Config
+	skin       skin.Skin
+	engine     *search.Engine
+	recents    RecentSource
+	usage      UsageRecorder
+	reindex    Reconfigurer
+	input      *searchEntry
+	top        *fyne.Container // input row: search entry + settings gear
+	list       *widget.List
+	listHolder *fyne.Container // empties when there are no results, so
+	// the layout minimum collapses to the input row deterministically
 	results  []launcher.Entry
 	selected int
 	resident bool // tray or hotkey active: hide instead of quitting
@@ -129,8 +133,9 @@ func New(cfg config.Config, deps Deps) *Bar {
 
 	gear := widget.NewButtonWithIcon("", theme.SettingsIcon(), b.showSettings)
 	gear.Importance = widget.LowImportance
-	top := container.NewBorder(nil, nil, nil, gear, b.input)
-	content := container.NewBorder(top, nil, nil, nil, b.list)
+	b.top = container.NewBorder(nil, nil, nil, gear, b.input)
+	b.listHolder = container.NewStack(b.list)
+	content := container.NewBorder(b.top, nil, nil, nil, b.listHolder)
 
 	b.border = canvas.NewRectangle(color.Transparent)
 	b.applyBorder()
@@ -187,11 +192,26 @@ func (b *Bar) iconSize() float32 {
 	return defaultIconSize
 }
 
-// resizeBar applies the configured width and visible rows; the extra
-// padding accounts for the frame inset around the content.
+// resizeBar fits the window to the current results: no results means
+// just the input row, then it grows one row per result up to the
+// configured maximum, where the list starts scrolling. The base is
+// the input row's real minimum plus the frame padding, so the empty
+// bar has no leftover slack below the input.
 func (b *Bar) resizeBar() {
-	height := b.input.MinSize().Height + float32(b.cfg.Window.MaxItems)*b.rowHeight() + 8
+	visible := len(b.results)
+	if visible > b.cfg.Window.MaxItems {
+		visible = b.cfg.Window.MaxItems
+	}
+	base := b.top.MinSize().Height + theme.Padding()*2
+	height := base + float32(visible)*b.rowHeight()
 	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
+	// Re-assert once the size hints settle; harmless when the first
+	// request already landed.
+	time.AfterFunc(80*time.Millisecond, func() {
+		fyne.Do(func() {
+			b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
+		})
+	})
 }
 
 // Run shows the bar and blocks until the app exits. With a tray icon
@@ -262,12 +282,18 @@ func (b *Bar) toggle() {
 }
 
 // newWindow prefers a splash window: borderless and centered, the
-// natural shape for a launcher bar.
+// natural shape for a launcher bar. Fixed size makes every Resize
+// exact: the window manager gets matching min/max hints instead of
+// clamping shrinks against stale minimums.
 func (b *Bar) newWindow() fyne.Window {
+	var w fyne.Window
 	if drv, ok := b.app.Driver().(desktop.Driver); ok {
-		return drv.CreateSplashWindow()
+		w = drv.CreateSplashWindow()
+	} else {
+		w = b.app.NewWindow("laucha")
 	}
-	return b.app.NewWindow("laucha")
+	w.SetFixedSize(true)
+	return w
 }
 
 func (b *Bar) newList() *widget.List {
@@ -313,10 +339,21 @@ func (b *Bar) search(query string) {
 	}
 	b.selected = 0
 	b.list.Refresh()
+	// The list leaves the layout tree entirely when empty: hiding it
+	// is not enough, its minimum size could still win a relayout race
+	// and leave dead space under the input.
 	if len(b.results) > 0 {
+		if len(b.listHolder.Objects) == 0 {
+			b.listHolder.Objects = []fyne.CanvasObject{b.list}
+			b.listHolder.Refresh()
+		}
+		b.resizeBar()
 		b.list.Select(0)
 	} else {
 		b.list.UnselectAll()
+		b.listHolder.Objects = nil
+		b.listHolder.Refresh()
+		b.resizeBar()
 	}
 }
 
