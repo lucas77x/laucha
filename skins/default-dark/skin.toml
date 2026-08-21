@@ -1,14 +1,14 @@
-# Classic — the reference skin for laucha.
+# Default Dark — the built-in reference skin for laucha.
 #
 # A skin is a folder dropped into skins/<name>/ next to the binary or
 # under ~/.config/laucha/skins/. "template" picks one of the layouts
 # the app knows how to render; the rest of the file dresses it.
-# Unset values fall back to the built-in classic look.
+# Unset values fall back to the built-in defaults.
 #
 # The palette: warm charcoal surfaces (a wooden floor at night), warm
 # off-white text, and the mouse-ear rose as the single accent.
 
-name = "Classic"
+name = "Default Dark"
 author = "laucha"
 version = "1.0.0"
 template = "classic" # input on top, results below

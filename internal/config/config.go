@@ -33,7 +33,6 @@ type Window struct {
 	Width    float32 `toml:"width"`
 	MaxItems int     `toml:"max_items"` // visible rows before scrolling
 	Skin     string  `toml:"skin"`
-	Theme    string  `toml:"theme"` // system | light | dark
 }
 
 type Behavior struct {
@@ -66,8 +65,7 @@ func Default() Config {
 		Window: Window{
 			Width:    defaultWidth,
 			MaxItems: DefaultItems,
-			Skin:     "classic",
-			Theme:    "system",
+			Skin:     "default-dark",
 		},
 		Behavior: Behavior{
 			ShowTrayIcon:     true,

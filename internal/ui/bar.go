@@ -310,9 +310,6 @@ func (b *Bar) recentFiles() []launcher.Entry {
 // applyLive applies every setting that can change at runtime; only a
 // language change and disabling the tray still need a restart.
 func (b *Bar) applyLive(old config.Config) {
-	if b.cfg.Window.Theme != old.Window.Theme {
-		b.applyTheme()
-	}
 	if b.cfg.Hotkey != old.Hotkey {
 		b.rebindHotkey()
 	}

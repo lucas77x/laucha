@@ -37,8 +37,8 @@ func (b *Bar) showSettings() {
 	filesCheck.SetChecked(cfg.Search.Files)
 	general := container.NewVBox(
 		widget.NewForm(
-			widget.NewFormItem(i18n.T("Language"), language),
-			widget.NewFormItem(i18n.T("Hotkey"), hotkey),
+			widget.NewFormItem(i18n.T("Language"), fraction(language, 0.6)),
+			widget.NewFormItem(i18n.T("Hotkey"), fraction(hotkey, 0.6)),
 		),
 		autostartCheck, appsCheck, filesCheck,
 	)
@@ -59,15 +59,12 @@ func (b *Bar) showSettings() {
 	width.SetText(strconv.Itoa(int(cfg.Window.Width)))
 	items := widget.NewSelect([]string{"3", "4", "5", "6", "7", "8", "9", "10"}, nil)
 	items.SetSelected(strconv.Itoa(cfg.Window.MaxItems))
-	themeSelect := widget.NewSelect([]string{i18n.T("System"), i18n.T("Light"), i18n.T("Dark")}, nil)
-	themeSelect.SetSelected(themeLabel(cfg.Window.Theme))
 	skinSelect := widget.NewSelect(skin.Available(), nil)
 	skinSelect.SetSelected(cfg.Window.Skin)
 	display := container.NewVBox(widget.NewForm(
-		widget.NewFormItem(i18n.T("Window width"), width),
-		widget.NewFormItem(i18n.T("Visible items"), items),
-		widget.NewFormItem(i18n.T("Theme"), themeSelect),
-		widget.NewFormItem(i18n.T("Skin"), skinSelect),
+		widget.NewFormItem(i18n.T("Window width"), fraction(width, 0.4)),
+		widget.NewFormItem(i18n.T("Visible items"), fraction(items, 0.4)),
+		widget.NewFormItem(i18n.T("Skin"), fraction(skinSelect, 0.6)),
 	))
 
 	tabs := container.NewAppTabs(
@@ -100,7 +97,6 @@ func (b *Bar) showSettings() {
 		if v, err := strconv.Atoi(items.Selected); err == nil {
 			cfg.Window.MaxItems = v
 		}
-		cfg.Window.Theme = themeCode(themeSelect.Selected)
 		cfg.Window.Skin = skinSelect.Selected
 		cfg.Clamp()
 
@@ -150,28 +146,6 @@ func languageCode(label string) string {
 		return "en"
 	case "Español":
 		return "es"
-	default:
-		return "system"
-	}
-}
-
-func themeLabel(code string) string {
-	switch code {
-	case "light":
-		return i18n.T("Light")
-	case "dark":
-		return i18n.T("Dark")
-	default:
-		return i18n.T("System")
-	}
-}
-
-func themeCode(label string) string {
-	switch label {
-	case i18n.T("Light"):
-		return "light"
-	case i18n.T("Dark"):
-		return "dark"
 	default:
 		return "system"
 	}

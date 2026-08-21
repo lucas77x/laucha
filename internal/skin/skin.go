@@ -30,6 +30,7 @@ type Colors struct {
 	Foreground      string `toml:"foreground"`
 	Muted           string `toml:"muted"`
 	Accent          string `toml:"accent"`
+	OnAccent        string `toml:"on_accent"` // text over accent; auto-contrast when unset
 	Selection       string `toml:"selection"`
 	InputBackground string `toml:"input_background"`
 }
@@ -54,12 +55,12 @@ type Images struct {
 	Background string `toml:"background"`
 }
 
-// Default is the built-in classic look, used when no skin folder
-// exists on disk: warm charcoal surfaces, warm off-white text and the
+// Default is the built-in dark look, used when no skin folder exists
+// on disk: warm charcoal surfaces, warm off-white text and the
 // mouse-ear rose as the single accent.
 func Default() Skin {
 	return Skin{
-		Name:     "Classic",
+		Name:     "Default Dark",
 		Template: "classic",
 		Colors: Colors{
 			Background:      "#1B191F",
@@ -75,6 +76,32 @@ func Default() Skin {
 	}
 }
 
+// DefaultLight is the daylight counterpart: warm paper surfaces, ink
+// text and a deeper ear rose that stays readable on light ground.
+func DefaultLight() Skin {
+	return Skin{
+		Name:     "Default Light",
+		Template: "classic",
+		Colors: Colors{
+			Background:      "#F7F4EF",
+			Foreground:      "#2A2732",
+			Muted:           "#8A8494",
+			Accent:          "#D6748E",
+			Selection:       "#F0DEE4",
+			InputBackground: "#EFEBE4",
+		},
+		Font:   Font{Size: 15},
+		Rows:   Rows{Height: 46, IconSize: 30},
+		Border: Border{Color: "#D6748E55", Width: 1, Radius: 10},
+	}
+}
+
+// builtins are always available even without folders on disk.
+var builtins = map[string]func() Skin{
+	"default-dark":  Default,
+	"default-light": DefaultLight,
+}
+
 // Dirs returns where skins are searched: next to the binary first,
 // then the user config directory.
 func Dirs() []string {
@@ -88,11 +115,11 @@ func Dirs() []string {
 	return dirs
 }
 
-// Available lists skin names found on disk; classic is always
-// present as the built-in reference skin.
+// Available lists skin names: the two built-ins first, then any
+// drop-in folders found on disk.
 func Available() []string {
-	names := []string{"classic"}
-	seen := map[string]bool{"classic": true}
+	names := []string{"default-dark", "default-light"}
+	seen := map[string]bool{"default-dark": true, "default-light": true, "classic": true}
 	for _, dir := range Dirs() {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
@@ -108,24 +135,32 @@ func Available() []string {
 	return names
 }
 
-// Load reads <dir>/<name>/skin.toml. Unset fields keep the classic
-// values, so minimal skins stay valid.
+// Load reads <dir>/<name>/skin.toml. Unset fields keep the built-in
+// values, so minimal skins stay valid. "classic" is kept as an alias
+// of default-dark for older config files.
 func Load(name string) (Skin, error) {
+	if name == "classic" {
+		name = "default-dark"
+	}
+	base := Default()
+	if builtin, ok := builtins[name]; ok {
+		base = builtin()
+	}
 	for _, dir := range Dirs() {
 		path := filepath.Join(dir, name, "skin.toml")
 		data, err := os.ReadFile(path)
 		if err != nil {
 			continue
 		}
-		s := Default()
+		s := base
 		if err := toml.Unmarshal(data, &s); err != nil {
-			return Default(), err
+			return base, err
 		}
 		s.Dir = filepath.Join(dir, name)
 		return s, nil
 	}
-	if name == "classic" {
-		return Default(), nil
+	if builtin, ok := builtins[name]; ok {
+		return builtin(), nil
 	}
 	return Default(), errors.New("skin not found: " + name)
 }

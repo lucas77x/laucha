@@ -28,15 +28,25 @@ func TestParseColor(t *testing.T) {
 	}
 }
 
-func TestLoadFallsBackToClassic(t *testing.T) {
+func TestLoadBuiltinsAndClassicAlias(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
-	s, err := Load("classic")
-	if err != nil {
-		t.Fatalf("Load(classic): %v", err)
+	for _, name := range []string{"default-dark", "classic"} {
+		s, err := Load(name)
+		if err != nil {
+			t.Fatalf("Load(%s): %v", name, err)
+		}
+		if s.Colors.Accent != Default().Colors.Accent {
+			t.Errorf("Load(%s) accent = %s, want dark default", name, s.Colors.Accent)
+		}
 	}
-	if s.Colors.Accent != Default().Colors.Accent {
-		t.Errorf("Accent = %s, want built-in default", s.Colors.Accent)
+
+	light, err := Load("default-light")
+	if err != nil {
+		t.Fatalf("Load(default-light): %v", err)
+	}
+	if light.Colors.Background != DefaultLight().Colors.Background {
+		t.Errorf("light background = %s, want %s", light.Colors.Background, DefaultLight().Colors.Background)
 	}
 
 	if _, err := Load("missing-skin"); err == nil {
@@ -78,7 +88,7 @@ func TestLoadReadsUserSkinWithDefaults(t *testing.T) {
 			found = true
 		}
 	}
-	if !found || names[0] != "classic" {
-		t.Errorf("Available() = %v, want classic first and fortnite listed", names)
+	if !found || names[0] != "default-dark" || names[1] != "default-light" {
+		t.Errorf("Available() = %v, want built-ins first and fortnite listed", names)
 	}
 }

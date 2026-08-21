@@ -23,7 +23,7 @@ func (b *Bar) aboutContent() fyne.CanvasObject {
 
 	title := widget.NewLabelWithStyle("laucha "+b.app.Metadata().Version,
 		fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	subtitle := widget.NewLabelWithStyle(i18n.T("A minimalist keyboard-driven launcher"),
+	subtitle := widget.NewLabelWithStyle(i18n.T("A minimalist launcher"),
 		fyne.TextAlignCenter, fyne.TextStyle{})
 
 	repo, _ := url.Parse(repoURL)

@@ -1,0 +1,30 @@
+# Default Light — the built-in daylight skin for laucha.
+#
+# Warm paper surfaces, ink text and a deeper ear rose that stays
+# readable on light ground.
+
+name = "Default Light"
+author = "laucha"
+version = "1.0.0"
+template = "classic"
+
+[colors]
+background = "#F7F4EF"       # warm paper, never pure white
+foreground = "#2A2732"       # ink
+muted = "#8A8494"            # file paths, placeholders
+accent = "#D6748E"           # deeper ear rose for light ground
+selection = "#F0DEE4"        # rose-tinted paper for the chosen row
+input_background = "#EFEBE4" # inset: darker signals "type here"
+# on_accent = "#F7F4F5"      # text over accent; auto-contrast when unset
+
+[font]
+size = 15
+
+[rows]
+height = 46
+icon_size = 30
+
+[border]
+color = "#D6748E55"
+width = 1
+radius = 10

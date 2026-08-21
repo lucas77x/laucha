@@ -64,8 +64,7 @@ hotkey = "ctrl+space"
 [window]
 width = 640
 max_items = 4 # visible rows before scrolling (3-10)
-skin = "classic"
-theme = "system" # system | light | dark
+skin = "default-dark" # or "default-light", or any drop-in skin
 
 [behavior]
 show_tray_icon = true

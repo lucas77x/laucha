@@ -20,6 +20,7 @@ type skinTheme struct {
 	foreground color.NRGBA
 	muted      color.NRGBA
 	accent     color.NRGBA
+	onAccent   color.NRGBA
 	selection  color.NRGBA
 	input      color.NRGBA
 }
@@ -33,7 +34,20 @@ func newSkinTheme(s skin.Skin) *skinTheme {
 	t.accent = parseOr(s.Colors.Accent, d.Accent)
 	t.selection = parseOr(s.Colors.Selection, d.Selection)
 	t.input = parseOr(s.Colors.InputBackground, s.Colors.Background)
+	if c, ok := skin.ParseColor(s.Colors.OnAccent); ok {
+		t.onAccent = c
+	} else if luminance(t.accent) > 140 {
+		t.onAccent = color.NRGBA{R: 0x24, G: 0x1F, B: 0x26, A: 0xFF} // dark ink on light accents
+	} else {
+		t.onAccent = color.NRGBA{R: 0xF7, G: 0xF4, B: 0xF5, A: 0xFF}
+	}
 	return t
+}
+
+// luminance is the perceived brightness (0-255) used to auto-pick a
+// readable text color over the accent.
+func luminance(c color.NRGBA) float64 {
+	return 0.299*float64(c.R) + 0.587*float64(c.G) + 0.114*float64(c.B)
 }
 
 func parseOr(hex, fallback string) color.NRGBA {
@@ -54,6 +68,8 @@ func (t *skinTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) c
 		return t.muted
 	case theme.ColorNamePrimary, theme.ColorNameFocus, theme.ColorNameHyperlink:
 		return t.accent
+	case theme.ColorNameForegroundOnPrimary:
+		return t.onAccent
 	case theme.ColorNameSelection:
 		return t.selection
 	case theme.ColorNameInputBackground:
