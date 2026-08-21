@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-const latestURL = "https://api.github.com/repos/lucas77x/laucha/releases/latest"
+// latestURL is a variable so tests can point it at a fake server.
+var latestURL = "https://api.github.com/repos/lucas77x/laucha/releases/latest"
 
 // ReleasePage is where users download new versions.
 const ReleasePage = "https://github.com/lucas77x/laucha/releases/latest"

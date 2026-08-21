@@ -2,6 +2,7 @@ package autostart
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -38,5 +39,33 @@ func TestSyncFalseWithoutEntryIsNoop(t *testing.T) {
 
 	if err := Sync(false); err != nil {
 		t.Errorf("Sync(false) without entry: %v", err)
+	}
+}
+
+func TestSyncTrueFailsWhenConfigDirIsAFile(t *testing.T) {
+	dir := t.TempDir()
+	blocked := filepath.Join(dir, "not-a-dir")
+	if err := os.WriteFile(blocked, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XDG_CONFIG_HOME", blocked)
+
+	if err := Sync(true); err == nil {
+		t.Error("Sync(true) with a file as config home succeeded, want error")
+	}
+}
+
+func TestSyncFalseFailsWhenEntryIsANonEmptyDir(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	path, err := entryPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(path, "child"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Sync(false); err == nil {
+		t.Error("Sync(false) with a populated dir at the entry path succeeded, want error")
 	}
 }

@@ -42,7 +42,7 @@ Guidelines:
 - Keep packages decoupled: providers implement interfaces (`search.Provider`), the UI never reaches into storage directly.
 - Every user-facing string goes through `i18n.T(...)` — never hardcode UI text.
 - Commands are executed as argv, never through a shell.
-- New logic comes with unit tests; UI code is kept thin so the logic below it stays testable.
+- New logic comes with unit tests. **Every logic package must keep at least 80% coverage** — CI enforces it. `internal/ui` is exempt because it is Fyne rendering glue; when you add logic there, extract it into a testable unit (see `terminal.go`, `layout.go`, `hotkeycapture.go`) instead of burying it in widget wiring.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`…), in English.
 
 `third_party/systray` is a vendored dependency with two documented patches — sync carefully with upstream if you touch it.
