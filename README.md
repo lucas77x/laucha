@@ -62,8 +62,6 @@ chmod +x laucha
 
 Remove the menu entry anytime with `./laucha uninstall`.
 
-> Binary releases arrive with v1.0.
-
 ### Build from source
 
 ```sh
