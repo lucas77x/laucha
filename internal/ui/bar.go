@@ -62,6 +62,10 @@ type Bar struct {
 	selected int
 	resident bool // tray or hotkey active: hide instead of quitting
 	visible  bool
+
+	trayMenu   *fyne.Menu
+	trayToggle *fyne.MenuItem
+	about      fyne.Window
 }
 
 func New(cfg config.Config, deps Deps) *Bar {
@@ -118,6 +122,7 @@ func (b *Bar) Run() {
 	})
 
 	b.visible = true
+	b.refreshTrayToggle()
 	b.win.Canvas().Focus(b.input)
 	b.win.ShowAndRun()
 }
@@ -130,6 +135,7 @@ func (b *Bar) show() {
 	b.win.RequestFocus()
 	b.win.Canvas().Focus(b.input)
 	b.visible = true
+	b.refreshTrayToggle()
 }
 
 // hide keeps the app resident when possible, otherwise quits.
@@ -140,6 +146,7 @@ func (b *Bar) hide() {
 	}
 	b.visible = false
 	b.win.Hide()
+	b.refreshTrayToggle()
 }
 
 func (b *Bar) toggle() {

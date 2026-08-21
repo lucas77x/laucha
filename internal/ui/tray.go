@@ -24,12 +24,30 @@ func (b *Bar) setupTray() bool {
 	if !ok {
 		return false
 	}
-	desk.SetSystemTrayMenu(fyne.NewMenu("laucha",
-		fyne.NewMenuItem(i18n.T("Show"), func() { b.show() }),
-	))
+	b.trayToggle = fyne.NewMenuItem(i18n.T("Show"), b.toggle)
+	b.trayMenu = fyne.NewMenu("laucha",
+		b.trayToggle,
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem(i18n.T("About"), b.showAbout),
+	)
+	desk.SetSystemTrayMenu(b.trayMenu)
 	desk.SetSystemTrayIcon(fyne.NewStaticResource("tray.png", assets.TrayPNG))
 	go publishTrayIconName()
 	return true
+}
+
+// refreshTrayToggle keeps the tray item in sync with visibility:
+// "Show" while hidden, "Hide" while visible.
+func (b *Bar) refreshTrayToggle() {
+	if b.trayToggle == nil {
+		return
+	}
+	if b.visible {
+		b.trayToggle.Label = i18n.T("Hide")
+	} else {
+		b.trayToggle.Label = i18n.T("Show")
+	}
+	b.trayMenu.Refresh()
 }
 
 // publishTrayIconName works around tray hosts (ayatana indicators on
