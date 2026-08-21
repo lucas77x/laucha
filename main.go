@@ -10,7 +10,6 @@ import (
 	"github.com/lucas77x/laucha/internal/i18n"
 	"github.com/lucas77x/laucha/internal/index"
 	"github.com/lucas77x/laucha/internal/instance"
-	"github.com/lucas77x/laucha/internal/search"
 	"github.com/lucas77x/laucha/internal/ui"
 	"github.com/lucas77x/laucha/internal/usage"
 )
@@ -31,30 +30,20 @@ func main() {
 		log.Printf("i18n: %v (using English)", err)
 	}
 
-	var providers []search.Provider
-	if cfg.Search.Apps {
-		providers = append(providers, apps.NewProvider())
+	deps := ui.Deps{Apps: apps.NewProvider()}
+	if idx, err := index.New(cfg.Search, cfg.Filter); err != nil {
+		log.Printf("file index disabled: %v", err)
+	} else {
+		defer idx.Close()
+		deps.Files = idx
+		deps.Recents = idx
 	}
-	var recents ui.RecentSource
-	if cfg.Search.Files {
-		idx, err := index.New(cfg.Search, cfg.Filter)
-		if err != nil {
-			log.Printf("file index disabled: %v", err)
-		} else {
-			defer idx.Close()
-			providers = append(providers, idx)
-			recents = idx
-		}
-	}
-
-	engine := search.NewEngine(providers...)
-	deps := ui.Deps{Engine: engine, Recents: recents}
 	if opens, err := usage.Open(); err != nil {
 		log.Printf("usage stats disabled: %v", err)
 	} else {
 		defer opens.Close()
-		engine.SetUsage(opens)
 		deps.Usage = opens
+		deps.Stats = opens
 	}
 
 	bar := ui.New(cfg, deps)

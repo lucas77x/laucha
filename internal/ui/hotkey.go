@@ -9,25 +9,44 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// registerHotkey binds the configured global shortcut. Events arrive
-// on a background goroutine, so UI work is bridged through fyne.Do.
-func (b *Bar) registerHotkey() bool {
-	mods, key, err := parseHotkey(b.cfg.Hotkey)
+// bindHotkey binds a global shortcut. Events arrive on a background
+// goroutine, so UI work is bridged through fyne.Do.
+func (b *Bar) bindHotkey(spec string) bool {
+	mods, key, err := parseHotkey(spec)
 	if err != nil {
-		log.Printf("hotkey %q disabled: %v", b.cfg.Hotkey, err)
+		log.Printf("hotkey %q disabled: %v", spec, err)
 		return false
 	}
 	hk := hotkey.New(mods, key)
 	if err := hk.Register(); err != nil {
-		log.Printf("hotkey %q not registered: %v", b.cfg.Hotkey, err)
+		log.Printf("hotkey %q not registered: %v", spec, err)
 		return false
 	}
+	done := make(chan struct{})
 	go func() {
-		for range hk.Keydown() {
-			fyne.Do(b.toggle)
+		for {
+			select {
+			case <-done:
+				return
+			case <-hk.Keydown():
+				fyne.Do(b.toggle)
+			}
 		}
 	}()
+	b.unbindHotkey = func() {
+		close(done)
+		hk.Unregister()
+	}
 	return true
+}
+
+// rebindHotkey swaps the global shortcut at runtime.
+func (b *Bar) rebindHotkey() {
+	if b.unbindHotkey != nil {
+		b.unbindHotkey()
+		b.unbindHotkey = nil
+	}
+	b.hotkeyActive = b.bindHotkey(b.cfg.Hotkey)
 }
 
 // parseHotkey turns a spec such as "ctrl+space" or "super+shift+p"

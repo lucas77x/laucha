@@ -85,6 +85,7 @@ func (b *Bar) showSettings() {
 			status.SetText(i18n.T("Invalid hotkey"))
 			return
 		}
+		old := b.cfg
 		cfg.Language = languageCode(language.Selected)
 		cfg.Hotkey = hotkey.Text
 		cfg.Behavior.Autostart = autostartCheck.Checked
@@ -102,6 +103,7 @@ func (b *Bar) showSettings() {
 		}
 		cfg.Window.Theme = themeCode(themeSelect.Selected)
 		cfg.Window.Skin = skinSelect.Selected
+		cfg.Clamp()
 
 		if err := cfg.Save(); err != nil {
 			status.SetText(err.Error())
@@ -110,8 +112,17 @@ func (b *Bar) showSettings() {
 		if err := autostart.Sync(cfg.Behavior.Autostart); err != nil {
 			log.Printf("autostart: %v", err)
 		}
-		b.cfg = cfg // behavior toggles apply live; the rest on restart
-		status.SetText(i18n.T("Saved — some changes apply after restart"))
+		b.cfg = cfg
+		b.applyLive(old)
+		width.SetText(strconv.Itoa(int(cfg.Window.Width)))
+
+		needsRestart := cfg.Language != old.Language ||
+			(old.Behavior.ShowTrayIcon && !cfg.Behavior.ShowTrayIcon)
+		if needsRestart {
+			status.SetText(i18n.T("Saved — some changes apply after restart"))
+		} else {
+			status.SetText(i18n.T("Saved"))
+		}
 	})
 
 	w := b.app.NewWindow(i18n.T("Settings"))

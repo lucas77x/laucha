@@ -121,7 +121,7 @@ func Load() (Config, error) {
 	if err := toml.Unmarshal(data, &cfg); err != nil {
 		return Config{}, err
 	}
-	cfg.clamp()
+	cfg.Clamp()
 	return cfg, nil
 }
 
@@ -137,7 +137,8 @@ func (c Config) Save() error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-func (c *Config) clamp() {
+// Clamp forces out-of-range values back into their valid ranges.
+func (c *Config) Clamp() {
 	if c.Window.MaxItems < MinItems {
 		c.Window.MaxItems = MinItems
 	}

@@ -41,12 +41,15 @@ type UsageRecorder interface {
 	Record(path string) error
 }
 
-// Deps groups the collaborators the bar needs; Recents and Usage are
-// optional.
+// Deps groups the collaborators the bar needs; every field but Apps
+// is optional. The bar builds its own engine so the Apps/Files
+// switches in the settings apply live.
 type Deps struct {
-	Engine  *search.Engine
+	Apps    search.Provider
+	Files   search.Provider
 	Recents RecentSource
 	Usage   UsageRecorder
+	Stats   search.Usage
 }
 
 type Bar struct {
@@ -62,6 +65,10 @@ type Bar struct {
 	selected int
 	resident bool // tray or hotkey active: hide instead of quitting
 	visible  bool
+
+	trayActive   bool
+	hotkeyActive bool
+	unbindHotkey func()
 
 	trayMenu   *fyne.Menu
 	trayToggle *fyne.MenuItem
@@ -83,9 +90,15 @@ func New(cfg config.Config, deps Deps) *Bar {
 	b := &Bar{
 		app:     app.NewWithID("com.github.lucas77x.laucha"),
 		cfg:     cfg,
-		engine:  deps.Engine,
 		recents: deps.Recents,
 		usage:   deps.Usage,
+	}
+	b.engine = search.NewEngine(
+		search.Toggle{Provider: deps.Apps, Enabled: func() bool { return b.cfg.Search.Apps }},
+		search.Toggle{Provider: deps.Files, Enabled: func() bool { return b.cfg.Search.Files }},
+	)
+	if deps.Stats != nil {
+		b.engine.SetUsage(deps.Stats)
 	}
 	b.app.SetIcon(appIcon)
 	b.win = b.newWindow()
@@ -97,20 +110,26 @@ func New(cfg config.Config, deps Deps) *Bar {
 	b.list.OnSelected = func(id widget.ListItemID) { b.selected = id }
 
 	b.win.SetContent(container.NewBorder(b.input, nil, nil, nil, b.list))
-	height := b.input.MinSize().Height + float32(cfg.Window.MaxItems)*rowHeight
-	b.win.Resize(fyne.NewSize(cfg.Window.Width, height))
+	b.resizeBar()
 	b.win.CenterOnScreen()
 	b.search("")
 	return b
+}
+
+// resizeBar applies the configured width and visible rows.
+func (b *Bar) resizeBar() {
+	height := b.input.MinSize().Height + float32(b.cfg.Window.MaxItems)*rowHeight
+	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
 }
 
 // Run shows the bar and blocks until the app exits. With a tray icon
 // or a registered hotkey the app stays resident: closing the bar
 // only hides it.
 func (b *Bar) Run() {
-	trayOK := b.setupTray()
-	hotkeyOK := b.registerHotkey()
-	b.resident = trayOK || hotkeyOK
+	b.trayActive = b.setupTray()
+	b.hotkeyActive = b.bindHotkey(b.cfg.Hotkey)
+	b.resident = b.trayActive || b.hotkeyActive
+	b.applyTheme()
 
 	b.win.SetCloseIntercept(func() {
 		if b.resident && b.cfg.Behavior.MinimizeOnClose {
@@ -222,10 +241,29 @@ func (b *Bar) search(query string) {
 
 // recentFiles feeds the empty-query view when the config enables it.
 func (b *Bar) recentFiles() []launcher.Entry {
-	if b.recents == nil || !b.cfg.Behavior.ShowRecentOnOpen {
+	if b.recents == nil || !b.cfg.Behavior.ShowRecentOnOpen || !b.cfg.Search.Files {
 		return nil
 	}
 	return b.recents.Recent(queryLimit)
+}
+
+// applyLive applies every setting that can change at runtime; only a
+// language change and disabling the tray still need a restart.
+func (b *Bar) applyLive(old config.Config) {
+	if b.cfg.Window.Theme != old.Window.Theme {
+		b.applyTheme()
+	}
+	if b.cfg.Hotkey != old.Hotkey {
+		b.rebindHotkey()
+	}
+	if b.cfg.Window.Width != old.Window.Width || b.cfg.Window.MaxItems != old.Window.MaxItems {
+		b.resizeBar()
+	}
+	if b.cfg.Behavior.ShowTrayIcon && !b.trayActive {
+		b.trayActive = b.setupTray()
+	}
+	b.resident = b.trayActive || b.hotkeyActive
+	b.refreshTrayToggle()
 }
 
 // handleKey intercepts navigation keys before the entry consumes
