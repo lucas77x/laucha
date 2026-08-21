@@ -208,6 +208,15 @@ func (b *Bar) Run() {
 		}
 	})
 
+	// Starting hidden only makes sense while something (tray or
+	// hotkey) can bring the bar back.
+	if b.cfg.Behavior.StartHidden && b.resident {
+		b.visible = false
+		b.refreshTrayToggle()
+		b.app.Run()
+		return
+	}
+
 	b.visible = true
 	b.refreshTrayToggle()
 	b.win.Canvas().Focus(b.input)

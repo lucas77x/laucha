@@ -41,6 +41,7 @@ type Behavior struct {
 	HideOnFocusLost  bool `toml:"hide_on_focus_lost"`
 	ShowRecentOnOpen bool `toml:"show_recent_on_open"`
 	Autostart        bool `toml:"autostart"`
+	StartHidden      bool `toml:"start_hidden"` // start resident without showing the bar
 }
 
 type Search struct {

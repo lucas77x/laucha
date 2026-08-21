@@ -107,6 +107,7 @@ minimize_on_close = true
 hide_on_focus_lost = true
 show_recent_on_open = true
 autostart = false
+start_hidden = false # start resident without showing the bar
 
 [search]
 apps = true

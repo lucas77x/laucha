@@ -32,6 +32,8 @@ func (b *Bar) showSettings() {
 	hotkey.SetText(cfg.Hotkey)
 	autostartCheck := widget.NewCheck(i18n.T("Start at login"), nil)
 	autostartCheck.SetChecked(cfg.Behavior.Autostart)
+	startHiddenCheck := widget.NewCheck(i18n.T("Start minimized"), nil)
+	startHiddenCheck.SetChecked(cfg.Behavior.StartHidden)
 	appsCheck := widget.NewCheck(i18n.T("Search applications"), nil)
 	appsCheck.SetChecked(cfg.Search.Apps)
 	filesCheck := widget.NewCheck(i18n.T("Search files"), nil)
@@ -41,7 +43,7 @@ func (b *Bar) showSettings() {
 			widget.NewFormItem(i18n.T("Language"), fraction(language, 0.6)),
 			widget.NewFormItem(i18n.T("Hotkey"), fraction(hotkey, 0.6)),
 		),
-		autostartCheck, appsCheck, filesCheck,
+		autostartCheck, startHiddenCheck, appsCheck, filesCheck,
 	)
 
 	// Behavior
@@ -100,6 +102,7 @@ func (b *Bar) showSettings() {
 		cfg.Language = languageCode(language.Selected)
 		cfg.Hotkey = hotkey.Text
 		cfg.Behavior.Autostart = autostartCheck.Checked
+		cfg.Behavior.StartHidden = startHiddenCheck.Checked
 		cfg.Search.Apps = appsCheck.Checked
 		cfg.Search.Files = filesCheck.Checked
 		cfg.Behavior.ShowRecentOnOpen = recentCheck.Checked
