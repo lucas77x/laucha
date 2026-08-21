@@ -6,6 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.8.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/pelletier/go-toml/v2 v2.4.3
+	golang.design/x/hotkey v0.6.1
 	modernc.org/sqlite v1.57.0
 )
 

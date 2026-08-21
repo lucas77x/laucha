@@ -60,6 +60,8 @@ type Bar struct {
 	list     *widget.List
 	results  []launcher.Entry
 	selected int
+	resident bool // tray or hotkey active: hide instead of quitting
+	visible  bool
 }
 
 func New(cfg config.Config, deps Deps) *Bar {
@@ -86,10 +88,58 @@ func New(cfg config.Config, deps Deps) *Bar {
 	return b
 }
 
-// Run shows the bar and blocks until the app exits.
+// Run shows the bar and blocks until the app exits. With a tray icon
+// or a registered hotkey the app stays resident: closing the bar
+// only hides it.
 func (b *Bar) Run() {
+	trayOK := b.setupTray()
+	hotkeyOK := b.registerHotkey()
+	b.resident = trayOK || hotkeyOK
+
+	b.win.SetCloseIntercept(func() {
+		if b.resident && b.cfg.Behavior.MinimizeOnClose {
+			b.hide()
+			return
+		}
+		b.app.Quit()
+	})
+	b.app.Lifecycle().SetOnExitedForeground(func() {
+		if b.cfg.Behavior.HideOnFocusLost && b.visible {
+			b.hide()
+		}
+	})
+
+	b.visible = true
 	b.win.Canvas().Focus(b.input)
 	b.win.ShowAndRun()
+}
+
+// show resets the query and brings the bar to the front focused.
+func (b *Bar) show() {
+	b.input.SetText("")
+	b.search("") // refresh recents even when the text was already empty
+	b.win.Show()
+	b.win.RequestFocus()
+	b.win.Canvas().Focus(b.input)
+	b.visible = true
+}
+
+// hide keeps the app resident when possible, otherwise quits.
+func (b *Bar) hide() {
+	if !b.resident {
+		b.app.Quit()
+		return
+	}
+	b.visible = false
+	b.win.Hide()
+}
+
+func (b *Bar) toggle() {
+	if b.visible {
+		b.hide()
+		return
+	}
+	b.show()
 }
 
 // newWindow prefers a splash window: borderless and centered, the
@@ -164,9 +214,7 @@ func (b *Bar) recentFiles() []launcher.Entry {
 func (b *Bar) handleKey(key *fyne.KeyEvent) bool {
 	switch key.Name {
 	case fyne.KeyEscape:
-		// Hiding instead of quitting arrives together with the tray
-		// icon and the global hotkey.
-		b.app.Quit()
+		b.hide()
 		return true
 	case fyne.KeyDown:
 		b.moveSelection(1)
@@ -202,7 +250,7 @@ func (b *Bar) openSelected() {
 			log.Printf("usage: recording open: %v", err)
 		}
 	}
-	b.app.Quit()
+	b.hide()
 }
 
 // open launches an app detached from laucha, or a file with the

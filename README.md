@@ -17,15 +17,18 @@ Existing launchers kept forgetting where things are. laucha keeps a persistent i
 - Recent files, newest first, shown when the bar opens (configurable)
 - Bundled file-type icons (text, pdf, spreadsheet, image, audio, video, archive, code, …)
 - File results show the name plus its location relative to home
-- Keyboard-first: type, navigate with arrows, launch with Enter, close with Esc
+- Keyboard-first: type, navigate with arrows, launch with Enter, hide with Esc
+- Resident app: system tray icon and a configurable global hotkey (`ctrl+space` by default) toggle the bar instantly; launching or losing focus hides it instead of quitting
 - Config file with sane defaults, created on first run
 - Translations: English (default) and Spanish
 
 The first run walks the configured roots to build the index; later runs search instantly on the stored index while a background walk reconciles it. If some directories exceed the inotify watch limit, raise `fs.inotify.max_user_watches`.
 
+If another application already owns the configured hotkey, laucha logs it and keeps running without the global shortcut.
+
 ## Roadmap
 
-- System tray icon, global hotkey, hide on focus loss, autostart
+- Single-instance guard and autostart on login
 - Settings window with vertical tabs (General / Behavior / Display / About)
 - Skin engine — template-based; `classic` is the reference skin
 - Self-update from GitHub Releases
