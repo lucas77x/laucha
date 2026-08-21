@@ -60,6 +60,12 @@ go build .
 ./laucha
 ```
 
+Add laucha to your applications menu (entry + icon):
+
+```sh
+./laucha install    # remove later with: ./laucha uninstall
+```
+
 The first run walks your home directory to build the index; later runs search instantly on the stored index while a background walk reconciles it.
 
 ## Usage
@@ -175,9 +181,11 @@ go vet ./internal/...
 gofmt -l .
 ```
 
+The About screen (tray → About, or Settings → About) checks GitHub Releases for new versions.
+
 ## Roadmap
 
-- Update button — self-update from GitHub Releases
+- Verified self-updating binary (checksummed release assets)
 - Windows and macOS support
 - More layout templates for skins
 

@@ -2,19 +2,39 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/lucas77x/laucha/internal/apps"
 	"github.com/lucas77x/laucha/internal/autostart"
 	"github.com/lucas77x/laucha/internal/config"
 	"github.com/lucas77x/laucha/internal/i18n"
 	"github.com/lucas77x/laucha/internal/index"
+	"github.com/lucas77x/laucha/internal/install"
 	"github.com/lucas77x/laucha/internal/instance"
 	"github.com/lucas77x/laucha/internal/ui"
 	"github.com/lucas77x/laucha/internal/usage"
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "install":
+			if err := install.Install(); err != nil {
+				log.Fatalf("install: %v", err)
+			}
+			fmt.Println("laucha installed: check your applications menu")
+			return
+		case "uninstall":
+			if err := install.Uninstall(); err != nil {
+				log.Fatalf("uninstall: %v", err)
+			}
+			fmt.Println("laucha removed from the applications menu")
+			return
+		}
+	}
+
 	if instance.NotifyRunning() {
 		return // the running instance was asked to show its bar
 	}

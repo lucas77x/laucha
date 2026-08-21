@@ -24,5 +24,11 @@
   "Save": "Save",
   "Saved": "Saved",
   "Invalid hotkey": "Invalid hotkey",
-  "Saved — some changes apply after restart": "Saved — some changes apply after restart"
+  "Saved — some changes apply after restart": "Saved — some changes apply after restart",
+  "Check for updates": "Check for updates",
+  "Checking…": "Checking…",
+  "You are up to date": "You are up to date",
+  "New version available": "New version available",
+  "No releases published yet": "No releases published yet",
+  "Could not check for updates": "Could not check for updates"
 }

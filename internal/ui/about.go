@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"net/url"
 
 	"fyne.io/fyne/v2"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/lucas77x/laucha/assets"
 	"github.com/lucas77x/laucha/internal/i18n"
+	"github.com/lucas77x/laucha/internal/update"
 )
 
 const repoURL = "https://github.com/lucas77x/laucha"
@@ -29,7 +31,32 @@ func (b *Bar) aboutContent() fyne.CanvasObject {
 	repo, _ := url.Parse(repoURL)
 	link := widget.NewHyperlink("github.com/lucas77x/laucha", repo)
 
-	return container.NewVBox(icon, title, subtitle, container.NewCenter(link))
+	updateStatus := widget.NewLabel("")
+	updateStatus.Alignment = fyne.TextAlignCenter
+	checkUpdates := widget.NewButton(i18n.T("Check for updates"), func() {
+		updateStatus.SetText(i18n.T("Checking…"))
+		go func() {
+			latest, err := update.CheckLatest()
+			fyne.Do(func() {
+				switch {
+				case errors.Is(err, update.ErrNoReleases):
+					updateStatus.SetText(i18n.T("No releases published yet"))
+				case err != nil:
+					updateStatus.SetText(i18n.T("Could not check for updates"))
+				case update.IsNewer(b.app.Metadata().Version, latest):
+					updateStatus.SetText(i18n.T("New version available") + ": " + latest)
+					if page, err := url.Parse(update.ReleasePage); err == nil {
+						_ = b.app.OpenURL(page)
+					}
+				default:
+					updateStatus.SetText(i18n.T("You are up to date"))
+				}
+			})
+		}()
+	})
+
+	return container.NewVBox(icon, title, subtitle, container.NewCenter(link),
+		container.NewCenter(checkUpdates), updateStatus)
 }
 
 // showAbout opens the About window, or refocuses it when already

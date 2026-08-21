@@ -24,5 +24,11 @@
   "Save": "Guardar",
   "Saved": "Guardado",
   "Invalid hotkey": "Atajo inválido",
-  "Saved — some changes apply after restart": "Guardado — algunos cambios aplican al reiniciar"
+  "Saved — some changes apply after restart": "Guardado — algunos cambios aplican al reiniciar",
+  "Check for updates": "Buscar actualizaciones",
+  "Checking…": "Comprobando…",
+  "You are up to date": "Estás al día",
+  "New version available": "Nueva versión disponible",
+  "No releases published yet": "Aún no hay versiones publicadas",
+  "Could not check for updates": "No se pudo comprobar si hay actualizaciones"
 }
