@@ -11,13 +11,18 @@ Existing launchers kept forgetting where things are. laucha keeps a persistent i
 ## Features
 
 - App search by icon + name — fuzzy and case-insensitive (`spo` finds Spotify, `calc` finds the calculator)
+- Live file index: SQLite-backed and kept fresh by inotify watchers — a file downloaded seconds ago is already searchable
+- Recent files, newest first, shown when the bar opens (configurable)
+- Bundled file-type icons (text, pdf, spreadsheet, image, audio, video, archive, code, …)
+- File results show the name plus its location relative to home
 - Keyboard-first: type, navigate with arrows, launch with Enter, close with Esc
 - Config file with sane defaults, created on first run
 - Translations: English (default) and Spanish
 
+The first run walks the configured roots to build the index; later runs search instantly on the stored index while a background walk reconciles it. If some directories exceed the inotify watch limit, raise `fs.inotify.max_user_watches`.
+
 ## Roadmap
 
-- Live file index (inotify watchers) + recent files view
 - System tray icon, global hotkey, hide on focus loss, autostart
 - Settings window with vertical tabs (General / Behavior / Display / About)
 - Skin engine — template-based; `classic` is the reference skin

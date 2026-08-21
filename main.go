@@ -7,6 +7,7 @@ import (
 	"github.com/lucas77x/laucha/internal/apps"
 	"github.com/lucas77x/laucha/internal/config"
 	"github.com/lucas77x/laucha/internal/i18n"
+	"github.com/lucas77x/laucha/internal/index"
 	"github.com/lucas77x/laucha/internal/search"
 	"github.com/lucas77x/laucha/internal/ui"
 )
@@ -24,6 +25,17 @@ func main() {
 	if cfg.Search.Apps {
 		providers = append(providers, apps.NewProvider())
 	}
+	var recents ui.RecentSource
+	if cfg.Search.Files {
+		idx, err := index.New(cfg.Search, cfg.Filter)
+		if err != nil {
+			log.Printf("file index disabled: %v", err)
+		} else {
+			defer idx.Close()
+			providers = append(providers, idx)
+			recents = idx
+		}
+	}
 
-	ui.New(cfg, search.NewEngine(providers...)).Run()
+	ui.New(cfg, search.NewEngine(providers...), recents).Run()
 }

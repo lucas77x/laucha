@@ -5,6 +5,7 @@ package ui
 import (
 	"errors"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	"fyne.io/fyne/v2"
@@ -27,22 +28,30 @@ const (
 	queryLimit = 50 // results kept for scrolling beyond the visible rows
 )
 
+// RecentSource lists recently modified files for the empty-query
+// view.
+type RecentSource interface {
+	Recent(n int) []launcher.Entry
+}
+
 type Bar struct {
 	app      fyne.App
 	win      fyne.Window
 	cfg      config.Config
 	engine   *search.Engine
+	recents  RecentSource
 	input    *searchEntry
 	list     *widget.List
 	results  []launcher.Entry
 	selected int
 }
 
-func New(cfg config.Config, engine *search.Engine) *Bar {
+func New(cfg config.Config, engine *search.Engine, recents RecentSource) *Bar {
 	b := &Bar{
-		app:    app.NewWithID("com.github.lucas77x.laucha"),
-		cfg:    cfg,
-		engine: engine,
+		app:     app.NewWithID("com.github.lucas77x.laucha"),
+		cfg:     cfg,
+		engine:  engine,
+		recents: recents,
 	}
 	b.app.SetIcon(fyne.NewStaticResource("icon.svg", assets.IconSVG))
 	b.win = b.newWindow()
@@ -56,6 +65,7 @@ func New(cfg config.Config, engine *search.Engine) *Bar {
 	height := b.input.MinSize().Height + float32(cfg.Window.MaxItems)*rowHeight
 	b.win.Resize(fyne.NewSize(cfg.Window.Width, height))
 	b.win.CenterOnScreen()
+	b.search("")
 	return b
 }
 
@@ -81,7 +91,9 @@ func (b *Bar) newList() *widget.List {
 			icon := canvas.NewImageFromFile("")
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.NewSize(iconSize, iconSize))
-			return container.NewHBox(icon, widget.NewLabel(""))
+			path := widget.NewLabel("")
+			path.Importance = widget.LowImportance
+			return container.NewHBox(icon, widget.NewLabel(""), path)
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			if id >= len(b.results) {
@@ -90,16 +102,29 @@ func (b *Bar) newList() *widget.List {
 			entry := b.results[id]
 			row := item.(*fyne.Container)
 			icon := row.Objects[0].(*canvas.Image)
-			label := row.Objects[1].(*widget.Label)
-			icon.File = entry.Icon
+			name := row.Objects[1].(*widget.Label)
+			path := row.Objects[2].(*widget.Label)
+			if entry.Kind == launcher.KindFile {
+				icon.File = ""
+				icon.Resource = fileIcon(entry.Name)
+				path.SetText(displayDir(entry.Path))
+			} else {
+				icon.Resource = nil
+				icon.File = entry.Icon
+				path.SetText("")
+			}
 			icon.Refresh()
-			label.SetText(entry.Name)
+			name.SetText(entry.Name)
 		},
 	)
 }
 
 func (b *Bar) search(query string) {
-	b.results = b.engine.Query(query, queryLimit)
+	if strings.TrimSpace(query) == "" {
+		b.results = b.recentFiles()
+	} else {
+		b.results = b.engine.Query(query, queryLimit)
+	}
 	b.selected = 0
 	b.list.Refresh()
 	if len(b.results) > 0 {
@@ -107,6 +132,14 @@ func (b *Bar) search(query string) {
 	} else {
 		b.list.UnselectAll()
 	}
+}
+
+// recentFiles feeds the empty-query view when the config enables it.
+func (b *Bar) recentFiles() []launcher.Entry {
+	if b.recents == nil || !b.cfg.Behavior.ShowRecentOnOpen {
+		return nil
+	}
+	return b.recents.Recent(queryLimit)
 }
 
 // handleKey intercepts navigation keys before the entry consumes

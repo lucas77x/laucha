@@ -2,6 +2,8 @@
 // the search engine and the UI.
 package launcher
 
+import "time"
+
 type Kind int
 
 const (
@@ -11,9 +13,10 @@ const (
 
 // Entry is anything the bar can list and open.
 type Entry struct {
-	Kind Kind
-	Name string   // display name
-	Path string   // file path; for apps, the .desktop file path
-	Exec []string // launch argv, apps only; never run through a shell
-	Icon string   // resolved icon image path, may be empty
+	Kind    Kind
+	Name    string    // display name
+	Path    string    // file path; for apps, the .desktop file path
+	Exec    []string  // launch argv, apps only; never run through a shell
+	Icon    string    // resolved icon image path, may be empty
+	ModTime time.Time // files only; drives the recent view
 }
