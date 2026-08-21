@@ -26,9 +26,18 @@ jobs:
       - name: Vet
         run: go vet ./internal/...
 
-      - name: Test
-        # xvfb: the hotkey library needs an X display even in tests
-        run: xvfb-run -a go test ./internal/...
+      - name: Test with coverage gate (logic packages >= 80%)
+        # xvfb: the hotkey library needs an X display even in tests.
+        # internal/ui is exempt: it is Fyne rendering glue; its logic
+        # lives in extracted, fully tested files.
+        run: |
+          xvfb-run -a go test -cover ./internal/... 2>&1 | tee coverage.txt
+          awk '$1=="ok" && $2 !~ /internal\/ui$/ {
+            for (i=1;i<=NF;i++) if ($i ~ /%$/) {
+              gsub("%","",$i)
+              if ($i+0 < 80) { print "BELOW 80%: "$2" at "$i"%"; bad=1 }
+            }
+          } END { exit bad }' coverage.txt
 
       - name: Build
         run: go build .
