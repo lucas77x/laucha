@@ -319,11 +319,16 @@ func (b *Bar) search(query string) {
 	}
 	b.selected = 0
 	b.list.Refresh()
-	b.resizeBar()
+	// A hidden list is excluded from layout, so the empty bar can
+	// collapse to just the input instead of the list's minimum size.
 	if len(b.results) > 0 {
+		b.list.Show()
+		b.resizeBar()
 		b.list.Select(0)
 	} else {
 		b.list.UnselectAll()
+		b.list.Hide()
+		b.resizeBar()
 	}
 }
 
