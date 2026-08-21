@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland-dev wayland-protocols
+
+      - name: Test
+        run: go test ./internal/...
+
+      - name: Build
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          go build -trimpath \
+            -ldflags "-s -w -X github.com/lucas77x/laucha/internal/ui.Version=${VERSION}" \
+            -o laucha-linux-amd64 .
+          sha256sum laucha-linux-amd64 > checksums.txt
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            laucha-linux-amd64
+            checksums.txt
+          generate_release_notes: true
