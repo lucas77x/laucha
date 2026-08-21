@@ -1,0 +1,188 @@
+package ui
+
+import (
+	"log"
+	"os"
+	"path/filepath"
+	"strconv"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
+
+	"github.com/lucas77x/laucha/internal/autostart"
+	"github.com/lucas77x/laucha/internal/i18n"
+)
+
+// showSettings opens the Settings window, or refocuses it when
+// already open. Vertical tabs keep room to grow.
+func (b *Bar) showSettings() {
+	if b.settings != nil {
+		b.settings.Show()
+		b.settings.RequestFocus()
+		return
+	}
+
+	cfg := b.cfg // working copy; written back on Save
+
+	// General
+	language := widget.NewSelect([]string{i18n.T("System"), "English", "Español"}, nil)
+	language.SetSelected(languageLabel(cfg.Language))
+	hotkey := widget.NewEntry()
+	hotkey.SetText(cfg.Hotkey)
+	autostartCheck := widget.NewCheck(i18n.T("Start at login"), nil)
+	autostartCheck.SetChecked(cfg.Behavior.Autostart)
+	appsCheck := widget.NewCheck(i18n.T("Search applications"), nil)
+	appsCheck.SetChecked(cfg.Search.Apps)
+	filesCheck := widget.NewCheck(i18n.T("Search files"), nil)
+	filesCheck.SetChecked(cfg.Search.Files)
+	general := container.NewVBox(
+		widget.NewForm(
+			widget.NewFormItem(i18n.T("Language"), language),
+			widget.NewFormItem(i18n.T("Hotkey"), hotkey),
+		),
+		autostartCheck, appsCheck, filesCheck,
+	)
+
+	// Behavior
+	recentCheck := widget.NewCheck(i18n.T("Show recent files on open"), nil)
+	recentCheck.SetChecked(cfg.Behavior.ShowRecentOnOpen)
+	minimizeCheck := widget.NewCheck(i18n.T("Minimize on close"), nil)
+	minimizeCheck.SetChecked(cfg.Behavior.MinimizeOnClose)
+	focusCheck := widget.NewCheck(i18n.T("Hide on focus loss"), nil)
+	focusCheck.SetChecked(cfg.Behavior.HideOnFocusLost)
+	trayCheck := widget.NewCheck(i18n.T("Show tray icon"), nil)
+	trayCheck.SetChecked(cfg.Behavior.ShowTrayIcon)
+	behavior := container.NewVBox(recentCheck, minimizeCheck, focusCheck, trayCheck)
+
+	// Display
+	width := widget.NewEntry()
+	width.SetText(strconv.Itoa(int(cfg.Window.Width)))
+	items := widget.NewSelect([]string{"3", "4", "5", "6", "7", "8", "9", "10"}, nil)
+	items.SetSelected(strconv.Itoa(cfg.Window.MaxItems))
+	themeSelect := widget.NewSelect([]string{i18n.T("System"), i18n.T("Light"), i18n.T("Dark")}, nil)
+	themeSelect.SetSelected(themeLabel(cfg.Window.Theme))
+	skinSelect := widget.NewSelect(availableSkins(), nil)
+	skinSelect.SetSelected(cfg.Window.Skin)
+	display := container.NewVBox(widget.NewForm(
+		widget.NewFormItem(i18n.T("Window width"), width),
+		widget.NewFormItem(i18n.T("Visible items"), items),
+		widget.NewFormItem(i18n.T("Theme"), themeSelect),
+		widget.NewFormItem(i18n.T("Skin"), skinSelect),
+	))
+
+	tabs := container.NewAppTabs(
+		container.NewTabItem(i18n.T("General"), general),
+		container.NewTabItem(i18n.T("Behavior"), behavior),
+		container.NewTabItem(i18n.T("Display"), display),
+		container.NewTabItem(i18n.T("About"), b.aboutContent()),
+	)
+	tabs.SetTabLocation(container.TabLocationLeading)
+
+	status := widget.NewLabel("")
+	save := widget.NewButton(i18n.T("Save"), func() {
+		if _, _, err := parseHotkey(hotkey.Text); err != nil {
+			status.SetText(i18n.T("Invalid hotkey"))
+			return
+		}
+		cfg.Language = languageCode(language.Selected)
+		cfg.Hotkey = hotkey.Text
+		cfg.Behavior.Autostart = autostartCheck.Checked
+		cfg.Search.Apps = appsCheck.Checked
+		cfg.Search.Files = filesCheck.Checked
+		cfg.Behavior.ShowRecentOnOpen = recentCheck.Checked
+		cfg.Behavior.MinimizeOnClose = minimizeCheck.Checked
+		cfg.Behavior.HideOnFocusLost = focusCheck.Checked
+		cfg.Behavior.ShowTrayIcon = trayCheck.Checked
+		if v, err := strconv.Atoi(width.Text); err == nil {
+			cfg.Window.Width = float32(v)
+		}
+		if v, err := strconv.Atoi(items.Selected); err == nil {
+			cfg.Window.MaxItems = v
+		}
+		cfg.Window.Theme = themeCode(themeSelect.Selected)
+		cfg.Window.Skin = skinSelect.Selected
+
+		if err := cfg.Save(); err != nil {
+			status.SetText(err.Error())
+			return
+		}
+		if err := autostart.Sync(cfg.Behavior.Autostart); err != nil {
+			log.Printf("autostart: %v", err)
+		}
+		b.cfg = cfg // behavior toggles apply live; the rest on restart
+		status.SetText(i18n.T("Saved — some changes apply after restart"))
+	})
+
+	w := b.app.NewWindow(i18n.T("Settings"))
+	w.SetContent(container.NewBorder(nil, container.NewVBox(status, save), nil, nil, tabs))
+	w.Resize(fyne.NewSize(540, 420))
+	w.CenterOnScreen()
+	w.SetOnClosed(func() { b.settings = nil })
+	b.settings = w
+	w.Show()
+}
+
+func languageLabel(code string) string {
+	switch code {
+	case "en":
+		return "English"
+	case "es":
+		return "Español"
+	default:
+		return i18n.T("System")
+	}
+}
+
+func languageCode(label string) string {
+	switch label {
+	case "English":
+		return "en"
+	case "Español":
+		return "es"
+	default:
+		return "system"
+	}
+}
+
+func themeLabel(code string) string {
+	switch code {
+	case "light":
+		return i18n.T("Light")
+	case "dark":
+		return i18n.T("Dark")
+	default:
+		return i18n.T("System")
+	}
+}
+
+func themeCode(label string) string {
+	switch label {
+	case i18n.T("Light"):
+		return "light"
+	case i18n.T("Dark"):
+		return "dark"
+	default:
+		return "system"
+	}
+}
+
+// availableSkins lists the drop-in skin folders next to the binary;
+// classic is always present as the built-in reference skin.
+func availableSkins() []string {
+	names := []string{"classic"}
+	exe, err := os.Executable()
+	if err != nil {
+		return names
+	}
+	entries, err := os.ReadDir(filepath.Join(filepath.Dir(exe), "skins"))
+	if err != nil {
+		return names
+	}
+	for _, entry := range entries {
+		if entry.IsDir() && entry.Name() != "classic" {
+			names = append(names, entry.Name())
+		}
+	}
+	return names
+}

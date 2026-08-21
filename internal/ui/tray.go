@@ -28,6 +28,7 @@ func (b *Bar) setupTray() bool {
 	b.trayMenu = fyne.NewMenu("laucha",
 		b.trayToggle,
 		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem(i18n.T("Settings"), b.showSettings),
 		fyne.NewMenuItem(i18n.T("About"), b.showAbout),
 	)
 	desk.SetSystemTrayMenu(b.trayMenu)

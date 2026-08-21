@@ -66,7 +66,11 @@ type Bar struct {
 	trayMenu   *fyne.Menu
 	trayToggle *fyne.MenuItem
 	about      fyne.Window
+	settings   fyne.Window
 }
+
+// Show brings the bar to the front; safe to call from any goroutine.
+func (b *Bar) Show() { fyne.Do(b.show) }
 
 func New(cfg config.Config, deps Deps) *Bar {
 	appIcon := fyne.NewStaticResource("icon.svg", assets.IconSVG)

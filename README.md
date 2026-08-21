@@ -19,6 +19,9 @@ Existing launchers kept forgetting where things are. laucha keeps a persistent i
 - File results show the name plus its location relative to home
 - Keyboard-first: type, navigate with arrows, launch with Enter, hide with Esc
 - Resident app: system tray icon and a configurable global hotkey (`ctrl+space` by default) toggle the bar instantly; launching or losing focus hides it instead of quitting
+- Single instance: launching the binary again just shows the running bar
+- Settings window (tray → Settings) with vertical tabs: General / Behavior / Display / About
+- Optional autostart at login, managed from Settings
 - Config file with sane defaults, created on first run
 - Translations: English (default) and Spanish
 
@@ -30,8 +33,6 @@ If another application already owns the configured hotkey, laucha logs it and ke
 
 ## Roadmap
 
-- Single-instance guard and autostart on login
-- Settings window with vertical tabs (General / Behavior / Display / About)
 - Skin engine — template-based; `classic` is the reference skin
 - Self-update from GitHub Releases
 - Windows and macOS support
