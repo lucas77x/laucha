@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/lucas77x/laucha/assets"
 	"github.com/lucas77x/laucha/internal/config"
 	"github.com/lucas77x/laucha/internal/i18n"
 	"github.com/lucas77x/laucha/internal/launcher"
@@ -43,6 +44,7 @@ func New(cfg config.Config, engine *search.Engine) *Bar {
 		cfg:    cfg,
 		engine: engine,
 	}
+	b.app.SetIcon(fyne.NewStaticResource("icon.svg", assets.IconSVG))
 	b.win = b.newWindow()
 	b.input = newSearchEntry(b.handleKey)
 	b.input.SetPlaceHolder(i18n.T("Search apps and files…"))

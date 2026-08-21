@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- tail -->
+  <path d="M46 168 C 14 166 4 128 30 114 C 44 106 60 112 62 126" fill="none" stroke="#8A94AD" stroke-width="11" stroke-linecap="round"/>
+  <!-- body -->
+  <path d="M52 178 C 46 120 92 82 140 82 C 196 82 224 122 228 150 C 230 164 222 176 206 180 C 160 190 96 190 66 186 C 58 185 53 183 52 178 Z" fill="#8A94AD"/>
+  <!-- ear -->
+  <circle cx="106" cy="84" r="34" fill="#8A94AD"/>
+  <circle cx="106" cy="84" r="19" fill="#F2B8C6"/>
+  <!-- eye -->
+  <circle cx="176" cy="132" r="10" fill="#2B2F3A"/>
+  <!-- nose -->
+  <circle cx="226" cy="152" r="9" fill="#F2B8C6"/>
+  <!-- whiskers -->
+  <g stroke="#6E7893" stroke-width="4" stroke-linecap="round">
+    <line x1="206" y1="148" x2="246" y2="136"/>
+    <line x1="206" y1="158" x2="248" y2="158"/>
+    <line x1="204" y1="166" x2="244" y2="176"/>
+  </g>
+</svg>
