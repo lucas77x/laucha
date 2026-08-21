@@ -48,7 +48,21 @@ Every launcher kept forgetting where things are. laucha keeps a **persistent ind
 
 ## Install
 
-Binary releases arrive with v1.0. For now, build from source:
+### Binary (recommended)
+
+Download the latest binary from [Releases](https://github.com/lucas77x/laucha/releases) — it is self-contained, no dependencies needed:
+
+```sh
+chmod +x laucha
+./laucha            # first run builds your file index
+./laucha install    # add laucha to your applications menu
+```
+
+Remove the menu entry anytime with `./laucha uninstall`.
+
+> Binary releases arrive with v1.0.
+
+### Build from source
 
 ```sh
 # Build dependencies (Debian/Ubuntu)
@@ -57,13 +71,7 @@ sudo apt install pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland
 git clone https://github.com/lucas77x/laucha
 cd laucha
 go build .
-./laucha
-```
-
-Add laucha to your applications menu (entry + icon):
-
-```sh
-./laucha install    # remove later with: ./laucha uninstall
+./laucha install
 ```
 
 The first run walks your home directory to build the index; later runs search instantly on the stored index while a background walk reconciles it.
@@ -185,6 +193,7 @@ The About screen (tray → About, or Settings → About) checks GitHub Releases 
 
 ## Roadmap
 
+- Visual skin creator/editor
 - Verified self-updating binary (checksummed release assets)
 - Windows and macOS support
 - More layout templates for skins
