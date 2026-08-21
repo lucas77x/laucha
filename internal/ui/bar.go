@@ -307,17 +307,18 @@ func (b *Bar) newList() *widget.List {
 			icon.SetMinSize(fyne.NewSize(b.iconSize(), b.iconSize()))
 			path := widget.NewLabel("")
 			path.TextStyle = fyne.TextStyle{Italic: true}
-			return container.NewHBox(icon, widget.NewLabel(""), path)
+			return newTappableRow(container.NewHBox(icon, widget.NewLabel(""), path))
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			if id >= len(b.results) {
 				return
 			}
 			entry := b.results[id]
-			row := item.(*fyne.Container)
-			icon := row.Objects[0].(*canvas.Image)
-			name := row.Objects[1].(*widget.Label)
-			path := row.Objects[2].(*widget.Label)
+			row := item.(*tappableRow)
+			cells := row.content.(*fyne.Container)
+			icon := cells.Objects[0].(*canvas.Image)
+			name := cells.Objects[1].(*widget.Label)
+			path := cells.Objects[2].(*widget.Label)
 			if entry.Kind == launcher.KindFile {
 				icon.File = ""
 				icon.Resource = fileIcon(entry.Name)
@@ -329,6 +330,11 @@ func (b *Bar) newList() *widget.List {
 			}
 			icon.Refresh()
 			name.SetText(entry.Name)
+			// Rows are recycled: rebind the tap to the current id.
+			row.onTap = func() {
+				b.selected = id
+				b.openSelected()
+			}
 		},
 	)
 }
