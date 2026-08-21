@@ -6,7 +6,9 @@ import (
 	"errors"
 	"image/color"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -305,17 +307,18 @@ func (b *Bar) newList() *widget.List {
 			icon.SetMinSize(fyne.NewSize(b.iconSize(), b.iconSize()))
 			path := widget.NewLabel("")
 			path.TextStyle = fyne.TextStyle{Italic: true}
-			return container.NewHBox(icon, widget.NewLabel(""), path)
+			return newTappableRow(container.NewHBox(icon, widget.NewLabel(""), path))
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			if id >= len(b.results) {
 				return
 			}
 			entry := b.results[id]
-			row := item.(*fyne.Container)
-			icon := row.Objects[0].(*canvas.Image)
-			name := row.Objects[1].(*widget.Label)
-			path := row.Objects[2].(*widget.Label)
+			row := item.(*tappableRow)
+			cells := row.content.(*fyne.Container)
+			icon := cells.Objects[0].(*canvas.Image)
+			name := cells.Objects[1].(*widget.Label)
+			path := cells.Objects[2].(*widget.Label)
 			if entry.Kind == launcher.KindFile {
 				icon.File = ""
 				icon.Resource = fileIcon(entry.Name)
@@ -327,6 +330,11 @@ func (b *Bar) newList() *widget.List {
 			}
 			icon.Refresh()
 			name.SetText(entry.Name)
+			// Rows are recycled: rebind the tap to the current id.
+			row.onTap = func() {
+				b.selected = id
+				b.openSelected()
+			}
 		},
 	)
 }
@@ -418,6 +426,7 @@ func (b *Bar) openSelected() {
 	}
 	entry := b.results[b.selected]
 	if err := open(entry); err != nil {
+		log.Printf("open %s: %v", entry.Path, err)
 		return
 	}
 	if b.usage != nil {
@@ -429,8 +438,10 @@ func (b *Bar) openSelected() {
 }
 
 // open launches an app detached from laucha, or a file with the
-// desktop's default handler. Commands run directly, never through a
-// shell.
+// desktop's default handler. Executable files (AppImages, scripts
+// the user marked +x) run directly — xdg-open would hand them to a
+// viewer instead of executing them. Commands run directly, never
+// through a shell.
 func open(entry launcher.Entry) error {
 	var cmd *exec.Cmd
 	switch entry.Kind {
@@ -444,10 +455,31 @@ func open(entry launcher.Entry) error {
 		}
 		cmd = exec.Command(argv[0], argv[1:]...)
 	default:
+		if isExecutable(entry.Path) {
+			cmd = exec.Command(entry.Path)
+			cmd.Dir = filepath.Dir(entry.Path)
+			cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+			if err := cmd.Start(); err == nil {
+				return nil
+			}
+			// Executable bit without an executable format (data files
+			// on FAT mounts, scripts without shebang): fall back to
+			// the default handler.
+		}
 		cmd = exec.Command("xdg-open", entry.Path)
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	return cmd.Start()
+}
+
+// isExecutable reports whether path is a regular file with any
+// execute bit set.
+func isExecutable(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular() && info.Mode().Perm()&0o111 != 0
 }
 
 // searchEntry lets the bar intercept navigation keys while normal
