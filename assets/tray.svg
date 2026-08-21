@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Simplified high-contrast silhouette for tiny tray sizes. -->
+  <path d="M40 174 C 20 172 12 140 34 130 C 42 126 52 128 56 134" fill="none" stroke="#2F3542" stroke-width="18" stroke-linecap="round"/>
+  <path d="M52 182 C 46 118 94 76 142 76 C 200 76 228 120 232 150 C 234 166 226 180 208 184 C 160 194 96 194 66 190 C 58 189 53 187 52 182 Z" fill="#2F3542"/>
+  <circle cx="104" cy="80" r="38" fill="#2F3542"/>
+  <circle cx="104" cy="80" r="20" fill="#F2B8C6"/>
+  <circle cx="180" cy="130" r="12" fill="#FFFFFF"/>
+</svg>

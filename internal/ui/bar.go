@@ -81,6 +81,7 @@ func New(cfg config.Config, deps Deps) *Bar {
 	}
 	b.app.SetIcon(appIcon)
 	b.win = b.newWindow()
+	b.win.SetTitle("laucha")
 	b.input = newSearchEntry(b.handleKey)
 	b.input.SetPlaceHolder(i18n.T("Search apps and files…"))
 	b.input.OnChanged = b.search

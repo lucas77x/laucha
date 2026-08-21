@@ -26,6 +26,8 @@ The first run walks the configured roots to build the index; later runs search i
 
 If another application already owns the configured hotkey, laucha logs it and keeps running without the global shortcut.
 
+`third_party/systray` is a vendored copy of [fyne.io/systray](https://github.com/fyne-io/systray) (Apache-2.0) with one added function, `SetIconName`: ayatana-based tray hosts (MATE, XFCE) ignore `IconPixmap`, so laucha also publishes its tray icon as a file path, the same strategy Qt applications use.
+
 ## Roadmap
 
 - Single-instance guard and autostart on login

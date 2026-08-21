@@ -6,6 +6,18 @@ import "embed"
 //go:embed icon.svg
 var IconSVG []byte
 
+// TraySVG is a simplified high-contrast variant of the app icon that
+// stays readable at tiny system-tray sizes.
+//
+//go:embed tray.svg
+var TraySVG []byte
+
+// TrayPNG is the pre-rasterized tray icon; some tray hosts only
+// handle raster pixmaps reliably.
+//
+//go:embed tray.png
+var TrayPNG []byte
+
 //go:embed icons
 var icons embed.FS
 
