@@ -20,10 +20,11 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland-dev wayland-protocols
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland-dev wayland-protocols xvfb
 
       - name: Test
-        run: go test ./internal/...
+        # xvfb: the hotkey library needs an X display even in tests
+        run: xvfb-run -a go test ./internal/...
 
       - name: Build
         run: |
