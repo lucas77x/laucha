@@ -75,6 +75,7 @@ type Bar struct {
 	usage    UsageRecorder
 	reindex  Reconfigurer
 	input    *searchEntry
+	top      *fyne.Container // input row: search entry + settings gear
 	list     *widget.List
 	results  []launcher.Entry
 	selected int
@@ -129,8 +130,8 @@ func New(cfg config.Config, deps Deps) *Bar {
 
 	gear := widget.NewButtonWithIcon("", theme.SettingsIcon(), b.showSettings)
 	gear.Importance = widget.LowImportance
-	top := container.NewBorder(nil, nil, nil, gear, b.input)
-	content := container.NewBorder(top, nil, nil, nil, b.list)
+	b.top = container.NewBorder(nil, nil, nil, gear, b.input)
+	content := container.NewBorder(b.top, nil, nil, nil, b.list)
 
 	b.border = canvas.NewRectangle(color.Transparent)
 	b.applyBorder()
@@ -188,15 +189,17 @@ func (b *Bar) iconSize() float32 {
 }
 
 // resizeBar fits the window to the current results: no results means
-// just the input, then it grows one row per result up to the
-// configured maximum, where the list starts scrolling. The extra
-// padding accounts for the frame inset around the content.
+// just the input row, then it grows one row per result up to the
+// configured maximum, where the list starts scrolling. The base is
+// the input row's real minimum plus the frame padding, so the empty
+// bar has no leftover slack below the input.
 func (b *Bar) resizeBar() {
 	visible := len(b.results)
 	if visible > b.cfg.Window.MaxItems {
 		visible = b.cfg.Window.MaxItems
 	}
-	height := b.input.MinSize().Height + float32(visible)*b.rowHeight() + 8
+	base := b.top.MinSize().Height + theme.Padding()*2
+	height := base + float32(visible)*b.rowHeight()
 	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
 }
 
