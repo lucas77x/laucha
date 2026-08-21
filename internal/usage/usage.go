@@ -98,7 +98,11 @@ func dbPath() (string, error) {
 		base = filepath.Join(home, ".local", "share")
 	}
 	dir := filepath.Join(base, "laucha")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	// 0700: open counts reveal user behavior; keep them private.
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
 		return "", err
 	}
 	return filepath.Join(dir, "usage.db"), nil

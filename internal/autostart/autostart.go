@@ -31,7 +31,7 @@ func Sync(enabled bool) error {
 Type=Application
 Name=laucha
 Comment=Minimalist keyboard-driven launcher
-Exec=%s
+Exec="%s"
 Terminal=false
 X-GNOME-Autostart-enabled=true
 `, exe)

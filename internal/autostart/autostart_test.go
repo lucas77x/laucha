@@ -21,8 +21,8 @@ func TestSyncCreatesAndRemovesEntry(t *testing.T) {
 		t.Fatalf("entry not written: %v", err)
 	}
 	exe, _ := os.Executable()
-	if !strings.Contains(string(data), "Exec="+exe) {
-		t.Errorf("entry missing Exec=%s:\n%s", exe, data)
+	if !strings.Contains(string(data), "Exec=\""+exe+"\"") {
+		t.Errorf("entry missing quoted Exec for %s:\n%s", exe, data)
 	}
 
 	if err := Sync(false); err != nil {

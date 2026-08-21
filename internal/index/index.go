@@ -186,7 +186,12 @@ func dataPath() (string, error) {
 		base = filepath.Join(home, ".local", "share")
 	}
 	dir := filepath.Join(base, "laucha")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	// 0700: the index lists every filename under the user's roots and
+	// must not be readable by other local users.
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
 		return "", err
 	}
 	return filepath.Join(dir, "index.db"), nil

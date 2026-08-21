@@ -53,7 +53,14 @@ func Listen(onShow func()) (func(), error) {
 func socketPath() string {
 	dir := os.Getenv("XDG_RUNTIME_DIR")
 	if dir == "" {
-		dir = os.TempDir()
+		// Never fall back to a world-writable directory: any local
+		// user could squat or signal the socket there.
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return filepath.Join(os.TempDir(), "laucha.sock")
+		}
+		dir = filepath.Join(home, ".local", "share", "laucha")
+		_ = os.MkdirAll(dir, 0o700)
 	}
 	return filepath.Join(dir, "laucha.sock")
 }
