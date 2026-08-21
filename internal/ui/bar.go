@@ -426,6 +426,7 @@ func (b *Bar) openSelected() {
 	}
 	entry := b.results[b.selected]
 	if err := open(entry); err != nil {
+		log.Printf("open %s: %v", entry.Path, err)
 		return
 	}
 	if b.usage != nil {
