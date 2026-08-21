@@ -187,10 +187,16 @@ func (b *Bar) iconSize() float32 {
 	return defaultIconSize
 }
 
-// resizeBar applies the configured width and visible rows; the extra
+// resizeBar fits the window to the current results: no results means
+// just the input, then it grows one row per result up to the
+// configured maximum, where the list starts scrolling. The extra
 // padding accounts for the frame inset around the content.
 func (b *Bar) resizeBar() {
-	height := b.input.MinSize().Height + float32(b.cfg.Window.MaxItems)*b.rowHeight() + 8
+	visible := len(b.results)
+	if visible > b.cfg.Window.MaxItems {
+		visible = b.cfg.Window.MaxItems
+	}
+	height := b.input.MinSize().Height + float32(visible)*b.rowHeight() + 8
 	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
 }
 
@@ -313,6 +319,7 @@ func (b *Bar) search(query string) {
 	}
 	b.selected = 0
 	b.list.Refresh()
+	b.resizeBar()
 	if len(b.results) > 0 {
 		b.list.Select(0)
 	} else {
