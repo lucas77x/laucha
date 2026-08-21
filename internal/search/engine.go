@@ -71,7 +71,13 @@ func (e *Engine) Query(query string, limit int) []launcher.Entry {
 				return lastI.After(lastJ)
 			}
 		}
-		return matches[i].entry.Name < matches[j].entry.Name
+		if di, dj := depth(matches[i].entry.Path), depth(matches[j].entry.Path); di != dj {
+			return di < dj // shallower paths first
+		}
+		if matches[i].entry.Name != matches[j].entry.Name {
+			return matches[i].entry.Name < matches[j].entry.Name
+		}
+		return matches[i].entry.Path < matches[j].entry.Path
 	})
 	if len(matches) > limit {
 		matches = matches[:limit]
@@ -111,6 +117,12 @@ func pathScore(path, term string) int {
 		return 40
 	}
 	return 0
+}
+
+// depth counts path separators so ties can favor entries closer to
+// the root of the indexed tree.
+func depth(path string) int {
+	return strings.Count(path, "/")
 }
 
 // score ranks name against q: exact beats prefix beats word prefix

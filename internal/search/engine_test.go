@@ -106,6 +106,36 @@ func TestQueryRejectsEntriesMissingAnyTerm(t *testing.T) {
 	}
 }
 
+func TestQueryPrefersShallowerPathsOnTies(t *testing.T) {
+	engine := NewEngine(fakeProvider{entries: []launcher.Entry{
+		{Kind: launcher.KindFile, Name: "notas.txt", Path: "/home/u/Nextcloud/deep/dir/notas.txt"},
+		{Kind: launcher.KindFile, Name: "notas.txt", Path: "/home/u/Nextcloud/notas.txt"},
+	}})
+
+	got := engine.Query("not next", 10)
+
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2", len(got))
+	}
+	if got[0].Path != "/home/u/Nextcloud/notas.txt" {
+		t.Errorf("first result = %s, want the shallower path", got[0].Path)
+	}
+}
+
+func TestQueryNarrowsWithPathSubdirectoryTerms(t *testing.T) {
+	engine := NewEngine(fakeProvider{entries: []launcher.Entry{
+		{Kind: launcher.KindFile, Name: "notas.txt", Path: "/home/u/Nextcloud/viajes/notas.txt"},
+		{Kind: launcher.KindFile, Name: "notas.txt", Path: "/home/u/Nextcloud/notas.txt"},
+		{Kind: launcher.KindFile, Name: "notas.txt", Path: "/home/u/docs/notas.txt"},
+	}})
+
+	got := engine.Query("not next viajes", 10)
+
+	if len(got) != 1 || got[0].Path != "/home/u/Nextcloud/viajes/notas.txt" {
+		t.Errorf("Query(not next viajes) = %v, want only the viajes copy", got)
+	}
+}
+
 type fakeUsage map[string]int
 
 func (f fakeUsage) Stats(path string) (int, time.Time) { return f[path], time.Time{} }
