@@ -16,11 +16,12 @@ import (
 // be a terrible global hotkey.
 type hotkeyCapture struct {
 	widget.Entry
-	mods      map[string]bool
-	previous  string
-	recording bool
-	onStart   func() // suspends the app's own global grab
-	onStop    func() // restores it
+	mods       map[string]bool
+	previous   string
+	recording  bool
+	onStart    func()       // suspends the app's own global grab
+	onStop     func()       // restores it
+	onCaptured func(string) // fires with the combo before the grab returns
 }
 
 func newHotkeyCapture(current string, onStart, onStop func()) *hotkeyCapture {
@@ -92,8 +93,11 @@ func (h *hotkeyCapture) KeyDown(key *fyne.KeyEvent) {
 		return
 	}
 	combo := strings.Join(append(h.heldModifiers(), token), "+")
-	h.stop()
 	h.SetText(combo)
+	if h.onCaptured != nil {
+		h.onCaptured(combo) // update config first so stop() re-grabs the new combo
+	}
+	h.stop()
 }
 
 func (h *hotkeyCapture) partial() string {

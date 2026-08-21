@@ -141,7 +141,7 @@ func (b *Bar) showSettings() {
 			widget.NewFormItem(i18n.T("Names"), fraction(namesEntry, 0.6)),
 		),
 		widget.NewLabel(i18n.T("Patterns (regex, one per line)")),
-		fractionCentered(patternsEntry, 0.7),
+		fraction(patternsEntry, 0.7),
 		container.NewCenter(restore),
 	)
 
@@ -219,6 +219,17 @@ func (b *Bar) showSettings() {
 			})
 		})
 	}
+	// A captured combo saves itself: no reaching for the Save button.
+	hotkey.onCaptured = func(combo string) {
+		cfg.Hotkey = combo
+		b.cfg.Hotkey = combo
+		if err := b.cfg.Save(); err != nil {
+			showStatus(err.Error(), widget.DangerImportance)
+			return
+		}
+		showStatus("✅ "+i18n.T("Saved"), widget.SuccessImportance)
+	}
+
 	save := widget.NewButton(i18n.T("Save"), func() {
 		if _, _, err := parseHotkey(hotkey.Text); err != nil {
 			showStatus(i18n.T("Invalid hotkey"), widget.DangerImportance)
@@ -297,7 +308,7 @@ func (b *Bar) showSettings() {
 
 	w := b.app.NewWindow(i18n.T("Settings"))
 	w.SetContent(container.NewBorder(nil, container.NewVBox(status, save), nil, nil, tabs))
-	w.Resize(fyne.NewSize(640, 560))
+	w.Resize(fyne.NewSize(680, 500))
 	w.CenterOnScreen()
 	w.SetOnClosed(func() { b.settings = nil })
 	b.settings = w
