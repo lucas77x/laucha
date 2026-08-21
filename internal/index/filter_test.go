@@ -37,6 +37,28 @@ func TestExcludeMode(t *testing.T) {
 	}
 }
 
+func TestDefaultFilterExcludesCaches(t *testing.T) {
+	f := NewFilter(config.Default().Filter)
+
+	cases := []struct {
+		path string
+		want bool
+	}{
+		{"/home/u/docs/informe.pdf", true},
+		{"/home/u/go/pkg/mod/foo/bar.go", false},
+		{"/home/u/snap/code/253/data.txt", false},
+		{"/home/u/proyecto/__pycache__/m.pyc", false},
+	}
+	for _, c := range cases {
+		if got := f.IncludeFile(c.path); got != c.want {
+			t.Errorf("IncludeFile(%q) = %v, want %v", c.path, got, c.want)
+		}
+	}
+	if f.EnterDir("/home/u/go/pkg") || f.EnterDir("/home/u/snap") {
+		t.Error("default filter must prune go/pkg and snap directories")
+	}
+}
+
 func TestIncludeOnlyMode(t *testing.T) {
 	f := NewFilter(config.Filter{
 		Mode:       "include-only",

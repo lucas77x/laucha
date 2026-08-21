@@ -62,13 +62,19 @@ func (f *Filter) EnterDir(path string) bool {
 }
 
 // matches reports whether path hits any of the three matcher lists.
+// Names match every path segment, so a file inside an excluded
+// directory is excluded even when the event skips the walker's
+// pruning.
 func (f *Filter) matches(path string) bool {
-	base := filepath.Base(path)
-	if f.extensions[strings.ToLower(filepath.Ext(base))] {
+	if f.extensions[strings.ToLower(filepath.Ext(path))] {
 		return true
 	}
-	if f.names[base] {
-		return true
+	if len(f.names) > 0 {
+		for _, segment := range strings.Split(path, "/") {
+			if f.names[segment] {
+				return true
+			}
+		}
 	}
 	for _, re := range f.patterns {
 		if re.MatchString(path) {

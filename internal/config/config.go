@@ -81,8 +81,12 @@ func Default() Config {
 		Filter: Filter{
 			Mode:       "exclude",
 			Extensions: []string{},
-			Names:      []string{"node_modules"},
-			Patterns:   []string{`(^|/)\.[^/]+`}, // hidden files and directories
+			Names:      []string{"node_modules", "__pycache__"},
+			Patterns: []string{
+				`(^|/)\.[^/]+`,     // hidden files and directories
+				`(^|/)go/pkg(/|$)`, // Go module cache
+				`(^|/)snap(/|$)`,   // snap application data
+			},
 		},
 	}
 }
