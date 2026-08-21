@@ -331,7 +331,9 @@ func (b *Bar) search(query string) {
 	} else {
 		b.list.UnselectAll()
 		b.list.Hide()
-		b.resizeBar()
+		// Queue the resize after the current layout pass, so the
+		// hidden list is already out of the minimum-size math.
+		fyne.Do(b.resizeBar)
 	}
 }
 
