@@ -32,6 +32,7 @@ Every launcher kept forgetting where things are. laucha keeps a **persistent ind
 - **Multi-term search across name and path**, in any order: `notas nextcloud` and `nextcloud notas` both narrow `notas.txt` down to the copy under `~/Nextcloud`
 - **Frecency ranking** — equally good matches surface what you actually use first; ties prefer shallower paths
 - **Recent files view** when the bar opens, newest first
+- **Self-sizing bar** — with no results it collapses to just the input; it grows one row per result up to the configured maximum, then scrolls
 - **Resident**: global hotkey (`ctrl+space`) toggles the bar instantly; system tray icon with dynamic menu; Esc, launching or losing focus just hide it
 - **Single instance** — launching the binary again shows the running bar in ~25ms
 - **Skinnable** — drop-in skin folders; two built-ins (`default-dark`, `default-light`); switching applies live
