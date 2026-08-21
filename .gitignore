@@ -1,0 +1,11 @@
+# Binaries
+/laucha
+dist/
+
+# Go
+*.test
+*.out
+vendor/
+
+# Local data
+*.db

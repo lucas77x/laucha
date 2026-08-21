@@ -1,0 +1,27 @@
+# Classic — the reference skin for laucha.
+#
+# A skin is a folder dropped into skins/<name>/ next to the binary.
+# "template" picks one of the predefined layouts the app knows how to
+# render; the rest of the file dresses that layout.
+
+name = "Classic"
+author = "laucha"
+version = "0.1.0"
+template = "classic" # input on top, results below
+
+[colors]
+background = "#1E1E2E"
+foreground = "#CDD6F4"
+accent = "#89B4FA"
+selection = "#313244"
+
+[font]
+# family = "MyFont.ttf" # optional, bundled inside the skin folder
+size = 14
+
+[rows]
+height = 44
+icon_size = 28
+
+# [images]
+# background = "background.png" # optional, scaled to the window
