@@ -7,3 +7,8 @@ package systray
 //
 // laucha patch: not part of upstream fyne.io/systray v1.12.2.
 func SetIconName(name string) bool { return true }
+
+// SetStatus is a no-op outside SNI hosts.
+//
+// laucha patch: not part of upstream fyne.io/systray v1.12.2.
+func SetStatus(status string) bool { return true }

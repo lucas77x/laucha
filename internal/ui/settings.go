@@ -3,6 +3,7 @@ package ui
 import (
 	"log"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -50,7 +51,7 @@ func (b *Bar) showSettings() {
 	minimizeCheck.SetChecked(cfg.Behavior.MinimizeOnClose)
 	focusCheck := widget.NewCheck(i18n.T("Hide on focus loss"), nil)
 	focusCheck.SetChecked(cfg.Behavior.HideOnFocusLost)
-	trayCheck := widget.NewCheck(i18n.T("Show tray icon"), nil)
+	trayCheck := widget.NewCheck(i18n.T("Show tray icon"), b.setTrayVisible)
 	trayCheck.SetChecked(cfg.Behavior.ShowTrayIcon)
 	behavior := container.NewVBox(recentCheck, minimizeCheck, focusCheck, trayCheck)
 
@@ -76,9 +77,23 @@ func (b *Bar) showSettings() {
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	status := widget.NewLabel("")
+	var statusGen int
+	showStatus := func(text string, importance widget.Importance) {
+		statusGen++
+		generation := statusGen
+		status.Importance = importance
+		status.SetText(text)
+		time.AfterFunc(4*time.Second, func() {
+			fyne.Do(func() {
+				if generation == statusGen {
+					status.SetText("")
+				}
+			})
+		})
+	}
 	save := widget.NewButton(i18n.T("Save"), func() {
 		if _, _, err := parseHotkey(hotkey.Text); err != nil {
-			status.SetText(i18n.T("Invalid hotkey"))
+			showStatus(i18n.T("Invalid hotkey"), widget.DangerImportance)
 			return
 		}
 		old := b.cfg
@@ -101,7 +116,7 @@ func (b *Bar) showSettings() {
 		cfg.Clamp()
 
 		if err := cfg.Save(); err != nil {
-			status.SetText(err.Error())
+			showStatus(err.Error(), widget.DangerImportance)
 			return
 		}
 		if err := autostart.Sync(cfg.Behavior.Autostart); err != nil {
@@ -111,12 +126,10 @@ func (b *Bar) showSettings() {
 		b.applyLive(old)
 		width.SetText(strconv.Itoa(int(cfg.Window.Width)))
 
-		needsRestart := cfg.Language != old.Language ||
-			(old.Behavior.ShowTrayIcon && !cfg.Behavior.ShowTrayIcon)
-		if needsRestart {
-			status.SetText(i18n.T("Saved — some changes apply after restart"))
+		if cfg.Language != old.Language {
+			showStatus("✅ "+i18n.T("Saved — some changes apply after restart"), widget.WarningImportance)
 		} else {
-			status.SetText(i18n.T("Saved"))
+			showStatus("✅ "+i18n.T("Saved"), widget.SuccessImportance)
 		}
 	})
 

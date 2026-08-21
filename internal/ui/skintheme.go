@@ -13,8 +13,9 @@ import (
 // elevation and separators are derived from the declared colors, so
 // skins stay small: they name a world, laucha builds the layers.
 type skinTheme struct {
-	base fyne.Theme
-	s    skin.Skin
+	base    fyne.Theme
+	s       skin.Skin
+	variant fyne.ThemeVariant // derived from the background, never the OS
 
 	background color.NRGBA
 	foreground color.NRGBA
@@ -23,6 +24,7 @@ type skinTheme struct {
 	onAccent   color.NRGBA
 	selection  color.NRGBA
 	input      color.NRGBA
+	button     color.NRGBA
 }
 
 func newSkinTheme(s skin.Skin) *skinTheme {
@@ -41,6 +43,16 @@ func newSkinTheme(s skin.Skin) *skinTheme {
 	} else {
 		t.onAccent = color.NRGBA{R: 0xF7, G: 0xF4, B: 0xF5, A: 0xFF}
 	}
+
+	// Unmapped colors must fall back to the variant that matches the
+	// skin, not the OS setting — otherwise buttons vanish or glare.
+	if luminance(t.background) < 128 {
+		t.variant = theme.VariantDark
+		t.button = shift(t.background, 0.07)
+	} else {
+		t.variant = theme.VariantLight
+		t.button = shift(t.background, -0.05)
+	}
 	return t
 }
 
@@ -58,7 +70,7 @@ func parseOr(hex, fallback string) color.NRGBA {
 	return c
 }
 
-func (t *skinTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+func (t *skinTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
 	switch name {
 	case theme.ColorNameBackground:
 		return t.background
@@ -74,6 +86,16 @@ func (t *skinTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) c
 		return t.selection
 	case theme.ColorNameInputBackground:
 		return t.input
+	case theme.ColorNameButton:
+		return t.button
+	case theme.ColorNameDisabledButton:
+		return shift(t.button, -0.02)
+	case theme.ColorNameInputBorder:
+		return alpha(t.foreground, 0x30)
+	case theme.ColorNamePressed:
+		return alpha(t.foreground, 0x22)
+	case theme.ColorNameHeaderBackground:
+		return shift(t.background, 0.03)
 	case theme.ColorNameMenuBackground, theme.ColorNameOverlayBackground:
 		return shift(t.background, 0.05) // one whisper-quiet step above base
 	case theme.ColorNameHover:
@@ -83,7 +105,7 @@ func (t *skinTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) c
 	case theme.ColorNameScrollBar:
 		return alpha(t.foreground, 0x40)
 	}
-	return t.base.Color(name, variant)
+	return t.base.Color(name, t.variant)
 }
 
 func (t *skinTheme) Font(style fyne.TextStyle) fyne.Resource    { return t.base.Font(style) }

@@ -322,10 +322,7 @@ func (b *Bar) applyLive(old config.Config) {
 		b.applyBorder()
 		b.resizeBar()
 	}
-	if b.cfg.Behavior.ShowTrayIcon && !b.trayActive {
-		b.trayActive = b.setupTray()
-	}
-	b.resident = b.trayActive || b.hotkeyActive
+	b.setTrayVisible(b.cfg.Behavior.ShowTrayIcon)
 	b.refreshTrayToggle()
 }
 

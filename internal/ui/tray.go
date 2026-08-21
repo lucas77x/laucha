@@ -37,6 +37,21 @@ func (b *Bar) setupTray() bool {
 	return true
 }
 
+// setTrayVisible shows or hides the tray icon immediately: first
+// activation builds the tray, later toggles flip the SNI status.
+func (b *Bar) setTrayVisible(on bool) {
+	if on {
+		if b.trayActive {
+			systray.SetStatus("Active")
+		} else {
+			b.trayActive = b.setupTray()
+		}
+	} else if b.trayActive {
+		systray.SetStatus("Passive")
+	}
+	b.resident = b.trayActive || b.hotkeyActive
+}
+
 // refreshTrayToggle keeps the tray item in sync with visibility:
 // "Show" while hidden, "Hide" while visible.
 func (b *Bar) refreshTrayToggle() {
