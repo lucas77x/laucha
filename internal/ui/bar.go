@@ -4,6 +4,7 @@ package ui
 
 import (
 	"errors"
+	"log"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -34,24 +35,40 @@ type RecentSource interface {
 	Recent(n int) []launcher.Entry
 }
 
+// UsageRecorder counts opens so the ranking can favor what the user
+// actually launches.
+type UsageRecorder interface {
+	Record(path string) error
+}
+
+// Deps groups the collaborators the bar needs; Recents and Usage are
+// optional.
+type Deps struct {
+	Engine  *search.Engine
+	Recents RecentSource
+	Usage   UsageRecorder
+}
+
 type Bar struct {
 	app      fyne.App
 	win      fyne.Window
 	cfg      config.Config
 	engine   *search.Engine
 	recents  RecentSource
+	usage    UsageRecorder
 	input    *searchEntry
 	list     *widget.List
 	results  []launcher.Entry
 	selected int
 }
 
-func New(cfg config.Config, engine *search.Engine, recents RecentSource) *Bar {
+func New(cfg config.Config, deps Deps) *Bar {
 	b := &Bar{
 		app:     app.NewWithID("com.github.lucas77x.laucha"),
 		cfg:     cfg,
-		engine:  engine,
-		recents: recents,
+		engine:  deps.Engine,
+		recents: deps.Recents,
+		usage:   deps.Usage,
 	}
 	b.app.SetIcon(fyne.NewStaticResource("icon.svg", assets.IconSVG))
 	b.win = b.newWindow()
@@ -92,7 +109,7 @@ func (b *Bar) newList() *widget.List {
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.NewSize(iconSize, iconSize))
 			path := widget.NewLabel("")
-			path.Importance = widget.LowImportance
+			path.TextStyle = fyne.TextStyle{Italic: true}
 			return container.NewHBox(icon, widget.NewLabel(""), path)
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
@@ -176,8 +193,14 @@ func (b *Bar) openSelected() {
 	if b.selected >= len(b.results) {
 		return
 	}
-	if err := open(b.results[b.selected]); err != nil {
+	entry := b.results[b.selected]
+	if err := open(entry); err != nil {
 		return
+	}
+	if b.usage != nil {
+		if err := b.usage.Record(entry.Path); err != nil {
+			log.Printf("usage: recording open: %v", err)
+		}
 	}
 	b.app.Quit()
 }

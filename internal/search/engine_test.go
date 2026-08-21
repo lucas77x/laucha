@@ -2,6 +2,7 @@ package search
 
 import (
 	"testing"
+	"time"
 
 	"github.com/lucas77x/laucha/internal/launcher"
 )
@@ -76,5 +77,49 @@ func TestQueryRespectsLimit(t *testing.T) {
 
 	if got := engine.Query("app", 2); len(got) != 2 {
 		t.Errorf("len(Query(app, 2)) = %d, want 2", len(got))
+	}
+}
+
+func notasProvider() fakeProvider {
+	return fakeProvider{entries: []launcher.Entry{
+		{Kind: launcher.KindFile, Name: "notas.txt", Path: "/home/u/Nextcloud/notas.txt"},
+		{Kind: launcher.KindFile, Name: "notas.txt", Path: "/home/u/docs/notas.txt"},
+	}}
+}
+
+func TestQueryMatchesTermsAcrossNameAndPathInAnyOrder(t *testing.T) {
+	engine := NewEngine(notasProvider())
+
+	for _, q := range []string{"not nextcl", "nextcl not", "NEXTCL not"} {
+		got := engine.Query(q, 10)
+		if len(got) != 1 || got[0].Path != "/home/u/Nextcloud/notas.txt" {
+			t.Errorf("Query(%q) = %v, want only the Nextcloud copy", q, got)
+		}
+	}
+}
+
+func TestQueryRejectsEntriesMissingAnyTerm(t *testing.T) {
+	engine := NewEngine(notasProvider())
+
+	if got := engine.Query("notas zzz", 10); len(got) != 0 {
+		t.Errorf("Query(notas zzz) = %v, want no results", got)
+	}
+}
+
+type fakeUsage map[string]int
+
+func (f fakeUsage) Stats(path string) (int, time.Time) { return f[path], time.Time{} }
+
+func TestQueryBreaksTiesByOpenCount(t *testing.T) {
+	engine := NewEngine(notasProvider())
+	engine.SetUsage(fakeUsage{"/home/u/Nextcloud/notas.txt": 5})
+
+	got := engine.Query("notas", 10)
+
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2", len(got))
+	}
+	if got[0].Path != "/home/u/Nextcloud/notas.txt" {
+		t.Errorf("first result = %s, want the most opened copy", got[0].Path)
 	}
 }

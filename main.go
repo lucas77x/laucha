@@ -10,6 +10,7 @@ import (
 	"github.com/lucas77x/laucha/internal/index"
 	"github.com/lucas77x/laucha/internal/search"
 	"github.com/lucas77x/laucha/internal/ui"
+	"github.com/lucas77x/laucha/internal/usage"
 )
 
 func main() {
@@ -37,5 +38,15 @@ func main() {
 		}
 	}
 
-	ui.New(cfg, search.NewEngine(providers...), recents).Run()
+	engine := search.NewEngine(providers...)
+	deps := ui.Deps{Engine: engine, Recents: recents}
+	if opens, err := usage.Open(); err != nil {
+		log.Printf("usage stats disabled: %v", err)
+	} else {
+		defer opens.Close()
+		engine.SetUsage(opens)
+		deps.Usage = opens
+	}
+
+	ui.New(cfg, deps).Run()
 }

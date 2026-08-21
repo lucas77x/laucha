@@ -11,6 +11,8 @@ Existing launchers kept forgetting where things are. laucha keeps a persistent i
 ## Features
 
 - App search by icon + name — fuzzy and case-insensitive (`spo` finds Spotify, `calc` finds the calculator)
+- Multi-term search across name and path, in any order: `not nextcl` (or `nextcl not`) narrows `notas.txt` down to the copy under `~/Nextcloud`
+- Frecency ranking: opens are counted, so equally good matches surface what you actually use first
 - Live file index: SQLite-backed and kept fresh by inotify watchers — a file downloaded seconds ago is already searchable
 - Recent files, newest first, shown when the bar opens (configurable)
 - Bundled file-type icons (text, pdf, spreadsheet, image, audio, video, archive, code, …)
