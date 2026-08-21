@@ -36,6 +36,8 @@ Every launcher kept forgetting where things are. laucha keeps a **persistent ind
 - **Single instance** — launching the binary again shows the running bar in ~25ms
 - **Skinnable** — drop-in skin folders; two built-ins (`default-dark`, `default-light`); switching applies live
 - **Settings window** with vertical tabs; changes apply immediately (only the language needs a restart)
+- **Search filters UI** — default configuration that improves with every update, or full advanced control: indexed folders, exclude/include-only mode, extensions, names and regex patterns, with live reindexing
+- **Hotkey capture** — click the field and press the combination; no typing
 - **Translatable** — English and Spanish today; a new language is one JSON file
 - Bundled file-type icons (pdf, spreadsheet, image, audio, video, code, …) consistent on every desktop theme
 - Optional autostart at login
@@ -112,14 +114,17 @@ start_hidden = false # start resident without showing the bar
 [search]
 apps = true
 files = true
+advanced = false # false: laucha's built-in roots and filters apply
 roots = ["~"]
 
 [filter]
 mode = "exclude" # exclude | include-only
 extensions = []
-names = ["node_modules"]
+names = ["node_modules", "__pycache__"]
 patterns = ['(^|/)\.[^/]+'] # RE2 regex; default hides dotfiles
 ```
+
+Search filtering has two modes, switchable from Settings → Search. **Default configuration** uses laucha's built-in roots and exclusions (package caches, hidden files) — and inherits improvements automatically on every update. **Advanced configuration** replaces the defaults entirely: pick the indexed folders, the filter mode (exclude listed / include only listed) and the three matchers (extensions, names, RE2 patterns). Saving reindexes in the background while search keeps working.
 
 If some directories exceed the inotify watch limit, laucha logs it and search still works — raise `fs.inotify.max_user_watches` to watch everything.
 

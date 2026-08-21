@@ -31,5 +31,21 @@
   "You are up to date": "You are up to date",
   "New version available": "New version available",
   "No releases published yet": "No releases published yet",
-  "Could not check for updates": "Could not check for updates"
+  "Could not check for updates": "Could not check for updates",
+  "Search": "Search",
+  "Default configuration": "Default configuration",
+  "Advanced configuration": "Advanced configuration",
+  "Advanced settings replace the defaults": "Advanced settings replace the defaults",
+  "Indexed folders": "Indexed folders",
+  "Add folder": "Add folder",
+  "Filter mode": "Filter mode",
+  "Exclude listed": "Exclude listed",
+  "Include only listed": "Include only listed",
+  "Extensions": "Extensions",
+  "Names": "Names",
+  "Patterns (regex, one per line)": "Patterns (regex, one per line)",
+  "Restore defaults": "Restore defaults",
+  "Invalid pattern": "Invalid pattern",
+  "Saved — reindexing in the background": "Saved — reindexing in the background",
+  "Press the shortcut…": "Press the shortcut…"
 }

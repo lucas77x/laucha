@@ -31,5 +31,21 @@
   "You are up to date": "Estás al día",
   "New version available": "Nueva versión disponible",
   "No releases published yet": "Aún no hay versiones publicadas",
-  "Could not check for updates": "No se pudo comprobar si hay actualizaciones"
+  "Could not check for updates": "No se pudo comprobar si hay actualizaciones",
+  "Search": "Búsqueda",
+  "Default configuration": "Configuración por defecto",
+  "Advanced configuration": "Configuración avanzada",
+  "Advanced settings replace the defaults": "La configuración avanzada reemplaza los valores por defecto",
+  "Indexed folders": "Carpetas indexadas",
+  "Add folder": "Agregar carpeta",
+  "Filter mode": "Modo de filtrado",
+  "Exclude listed": "Excluir lo listado",
+  "Include only listed": "Incluir solo lo listado",
+  "Extensions": "Extensiones",
+  "Names": "Nombres",
+  "Patterns (regex, one per line)": "Patrones (regex, uno por línea)",
+  "Restore defaults": "Restaurar valores por defecto",
+  "Invalid pattern": "Patrón inválido",
+  "Saved — reindexing in the background": "Guardado — reindexando en segundo plano",
+  "Press the shortcut…": "Presiona el atajo…"
 }

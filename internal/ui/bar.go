@@ -48,6 +48,11 @@ type UsageRecorder interface {
 	Record(path string) error
 }
 
+// Reconfigurer re-applies indexing settings at runtime.
+type Reconfigurer interface {
+	Reconfigure(roots []string, filter config.Filter)
+}
+
 // Deps groups the collaborators the bar needs; every field but Apps
 // is optional. The bar builds its own engine so the Apps/Files
 // switches in the settings apply live.
@@ -57,6 +62,7 @@ type Deps struct {
 	Recents RecentSource
 	Usage   UsageRecorder
 	Stats   search.Usage
+	Reindex Reconfigurer
 }
 
 type Bar struct {
@@ -67,6 +73,7 @@ type Bar struct {
 	engine   *search.Engine
 	recents  RecentSource
 	usage    UsageRecorder
+	reindex  Reconfigurer
 	input    *searchEntry
 	list     *widget.List
 	results  []launcher.Entry
@@ -101,6 +108,7 @@ func New(cfg config.Config, deps Deps) *Bar {
 		cfg:     cfg,
 		recents: deps.Recents,
 		usage:   deps.Usage,
+		reindex: deps.Reindex,
 	}
 	b.engine = search.NewEngine(
 		search.Toggle{Provider: deps.Apps, Enabled: func() bool { return b.cfg.Search.Apps }},

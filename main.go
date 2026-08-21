@@ -51,12 +51,13 @@ func main() {
 	}
 
 	deps := ui.Deps{Apps: apps.NewProvider()}
-	if idx, err := index.New(cfg.Search, cfg.Filter); err != nil {
+	if idx, err := index.New(cfg.EffectiveRoots(), cfg.EffectiveFilter()); err != nil {
 		log.Printf("file index disabled: %v", err)
 	} else {
 		defer idx.Close()
 		deps.Files = idx
 		deps.Recents = idx
+		deps.Reindex = idx
 	}
 	if opens, err := usage.Open(); err != nil {
 		log.Printf("usage stats disabled: %v", err)
