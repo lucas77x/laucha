@@ -1,57 +1,78 @@
-# laucha
+<p align="center">
+  <img src="assets/icon.svg" width="96" alt="laucha logo" />
+</p>
 
-A minimalist, keyboard-driven launcher for Linux, built with Go and [Fyne](https://fyne.io). Open source, skinnable, translatable.
+<h1 align="center">laucha</h1>
 
-> **Status**: early development. The app-search MVP works; see the roadmap below.
+<p align="center">
+  A minimalist, keyboard-driven launcher for Linux.<br/>
+  Fast, resident, skinnable and translatable — built with Go and <a href="https://fyne.io">Fyne</a>.
+</p>
 
-## Why
+<p align="center">
+  <img src="https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go&logoColor=white" alt="Go 1.27+" />
+  <img src="https://img.shields.io/badge/platform-Linux%20(X11)-FCC624?logo=linux&logoColor=black" alt="Linux X11" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license" />
+</p>
 
-Existing launchers kept forgetting where things are. laucha keeps a persistent index that stays fresh in real time, so a file you downloaded two seconds ago is already searchable.
+<p align="center">
+  <img src="docs/bar-dark.png" width="600" alt="laucha bar, default dark skin" />
+</p>
+
+## Why laucha?
+
+Every launcher kept forgetting where things are. laucha keeps a **persistent index that stays fresh in real time** — a file you downloaded two seconds ago is already searchable. And it learns: what you actually open rises to the top.
+
+*"laucha"* is Rioplatense slang for a small mouse: tiny, quick, and it always knows where everything is.
 
 ## Features
 
-- App search by icon + name — fuzzy and case-insensitive (`spo` finds Spotify, `calc` finds the calculator)
-- Multi-term search across name and path, in any order: `not nextcl` (or `nextcl not`) narrows `notas.txt` down to the copy under `~/Nextcloud`
-- Frecency ranking: opens are counted, so equally good matches surface what you actually use first
-- Live file index: SQLite-backed and kept fresh by inotify watchers — a file downloaded seconds ago is already searchable
-- Recent files, newest first, shown when the bar opens (configurable)
-- Bundled file-type icons (text, pdf, spreadsheet, image, audio, video, archive, code, …)
-- File results show the name plus its location relative to home
-- Keyboard-first: type, navigate with arrows, launch with Enter, hide with Esc
-- Resident app: system tray icon and a configurable global hotkey (`ctrl+space` by default) toggle the bar instantly; launching or losing focus hides it instead of quitting
-- Single instance: launching the binary again just shows the running bar
-- Settings window (tray → Settings) with vertical tabs: General / Behavior / Display / About
-- Optional autostart at login, managed from Settings
-- Config file with sane defaults, created on first run
-- Translations: English (default) and Spanish
+- **App search** with real icons — fuzzy and case-insensitive: `spo` finds Spotify, `calc` finds the calculator
+- **Live file index** — SQLite-backed, kept fresh by inotify watchers; new files are searchable instantly
+- **Multi-term search across name and path**, in any order: `notas nextcloud` and `nextcloud notas` both narrow `notas.txt` down to the copy under `~/Nextcloud`
+- **Frecency ranking** — equally good matches surface what you actually use first; ties prefer shallower paths
+- **Recent files view** when the bar opens, newest first
+- **Resident**: global hotkey (`ctrl+space`) toggles the bar instantly; system tray icon with dynamic menu; Esc, launching or losing focus just hide it
+- **Single instance** — launching the binary again shows the running bar in ~25ms
+- **Skinnable** — drop-in skin folders; two built-ins (`default-dark`, `default-light`); switching applies live
+- **Settings window** with vertical tabs; changes apply immediately (only the language needs a restart)
+- **Translatable** — English and Spanish today; a new language is one JSON file
+- Bundled file-type icons (pdf, spreadsheet, image, audio, video, code, …) consistent on every desktop theme
+- Optional autostart at login
 
-The first run walks the configured roots to build the index; later runs search instantly on the stored index while a background walk reconciles it. If some directories exceed the inotify watch limit, raise `fs.inotify.max_user_watches`.
+## Screenshots
 
-If another application already owns the configured hotkey, laucha logs it and keeps running without the global shortcut.
+| Default Light | Settings |
+| --- | --- |
+| <img src="docs/bar-light.png" width="420" alt="default light skin" /> | <img src="docs/settings.png" width="420" alt="settings window" /> |
 
-`third_party/systray` is a vendored copy of [fyne.io/systray](https://github.com/fyne-io/systray) (Apache-2.0) with one added function, `SetIconName`: ayatana-based tray hosts (MATE, XFCE) ignore `IconPixmap`, so laucha also publishes its tray icon as a file path, the same strategy Qt applications use.
+## Install
 
-## Roadmap
-
-- Skin engine — template-based; `classic` is the reference skin
-- Self-update from GitHub Releases
-- Windows and macOS support
-
-## Requirements
-
-- Go 1.27+
-- Fyne build dependencies on Debian/Ubuntu:
+Binary releases arrive with v1.0. For now, build from source:
 
 ```sh
-sudo apt install pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev
-```
+# Build dependencies (Debian/Ubuntu)
+sudo apt install pkg-config libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland-dev wayland-protocols
 
-## Build & run
-
-```sh
+git clone https://github.com/lucas77x/laucha
+cd laucha
 go build .
 ./laucha
 ```
+
+The first run walks your home directory to build the index; later runs search instantly on the stored index while a background walk reconciles it.
+
+## Usage
+
+| Key | Action |
+| --- | --- |
+| `ctrl+space` | Show / hide the bar (configurable) |
+| Type | Search apps and files as you type |
+| `↑` / `↓` | Move selection |
+| `Enter` | Launch / open |
+| `Esc` | Hide |
+
+The gear button — or the tray menu — opens Settings.
 
 ## Configuration
 
@@ -85,9 +106,11 @@ names = ["node_modules"]
 patterns = ['(^|/)\.[^/]+'] # RE2 regex; default hides dotfiles
 ```
 
+If some directories exceed the inotify watch limit, laucha logs it and search still works — raise `fs.inotify.max_user_watches` to watch everything.
+
 ## Skins
 
-A skin is a folder dropped into `skins/<name>/` next to the binary, or into `~/.config/laucha/skins/`. Each skin declares one of the predefined layout templates in its `skin.toml` and dresses it. Unset values fall back to the built-in classic look, so a three-line skin is valid. Switching skins applies live.
+A skin is a folder dropped into `skins/<name>/` next to the binary, or into `~/.config/laucha/skins/`. Unset values fall back to the built-in defaults, so a three-line skin is valid. Switching skins applies live.
 
 ```toml
 name = "My skin"
@@ -100,6 +123,7 @@ muted = "#8A879B"            # file paths, placeholders
 accent = "#E8A0B4"           # focus, links, highlights
 selection = "#3A2E36"        # selected row
 input_background = "#141317" # search input
+# on_accent = "#241F26"      # text over accent; auto-contrast when unset
 
 [font]
 size = 15
@@ -117,7 +141,7 @@ radius = 10
 background = "background.png" # optional, stretched to the window
 ```
 
-Elevation, separators, hover and scrollbar colors are derived from the declared palette automatically. `skins/classic` is the reference skin.
+Elevation, separators, hover and button colors are derived from the declared palette automatically — skins name a world, laucha builds the layers.
 
 ## Translations
 
@@ -130,11 +154,32 @@ main.go              composition root
 internal/launcher    domain types (Entry)
 internal/config      TOML settings, defaults, clamping
 internal/search      ranking engine over pluggable providers
+internal/index       live file index: SQLite + walker + fsnotify
 internal/apps        .desktop discovery + icon resolution
+internal/usage       open counts for frecency
+internal/skin        drop-in skin loading
+internal/instance    single-instance socket
+internal/autostart   XDG autostart entry
 internal/i18n        translation wrapper (Fyne lang)
-internal/ui          the launcher bar (Fyne)
-skins/               drop-in skins
+internal/ui          bar, settings, tray, theming (Fyne)
+third_party/systray  vendored fyne.io/systray with SNI patches
 ```
+
+`third_party/systray` is a vendored copy of [fyne.io/systray](https://github.com/fyne-io/systray) (Apache-2.0) with two added functions (`SetIconName`, `SetStatus`): ayatana-based tray hosts (MATE, XFCE) ignore `IconPixmap`, so laucha publishes its tray icon by file path — the same strategy Qt applications use.
+
+## Development
+
+```sh
+go test ./internal/...   # unit tests
+go vet ./internal/...
+gofmt -l .
+```
+
+## Roadmap
+
+- Update button — self-update from GitHub Releases
+- Windows and macOS support
+- More layout templates for skins
 
 ## License
 
