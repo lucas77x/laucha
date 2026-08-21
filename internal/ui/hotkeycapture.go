@@ -98,6 +98,11 @@ func (h *hotkeyCapture) KeyDown(key *fyne.KeyEvent) {
 		h.onCaptured(combo) // update config first so stop() re-grabs the new combo
 	}
 	h.stop()
+	// Unfocus after stop, so FocusLost sees the finished recording
+	// and keeps the captured text.
+	if c := fyne.CurrentApp().Driver().CanvasForObject(h); c != nil {
+		c.Unfocus()
+	}
 }
 
 func (h *hotkeyCapture) partial() string {

@@ -219,15 +219,14 @@ func (b *Bar) showSettings() {
 			})
 		})
 	}
-	// A captured combo saves itself: no reaching for the Save button.
+	// A captured combo saves itself quietly: no Save button, no
+	// status message — the field just shows the new shortcut.
 	hotkey.onCaptured = func(combo string) {
 		cfg.Hotkey = combo
 		b.cfg.Hotkey = combo
 		if err := b.cfg.Save(); err != nil {
 			showStatus(err.Error(), widget.DangerImportance)
-			return
 		}
-		showStatus("✅ "+i18n.T("Saved"), widget.SuccessImportance)
 	}
 
 	save := widget.NewButton(i18n.T("Save"), func() {
