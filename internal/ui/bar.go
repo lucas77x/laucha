@@ -4,6 +4,7 @@ package ui
 
 import (
 	"errors"
+	"image/color"
 	"log"
 	"os/exec"
 	"strings"
@@ -77,6 +78,7 @@ type Bar struct {
 	trayToggle *fyne.MenuItem
 	about      fyne.Window
 	settings   fyne.Window
+	border     *canvas.Rectangle
 }
 
 // Show brings the bar to the front; safe to call from any goroutine.
@@ -117,13 +119,17 @@ func New(cfg config.Config, deps Deps) *Bar {
 	gear.Importance = widget.LowImportance
 	top := container.NewBorder(nil, nil, nil, gear, b.input)
 	content := container.NewBorder(top, nil, nil, nil, b.list)
+
+	b.border = canvas.NewRectangle(color.Transparent)
+	b.applyBorder()
+	layers := []fyne.CanvasObject{}
 	if bg := b.skin.BackgroundImagePath(); bg != "" {
 		image := canvas.NewImageFromFile(bg)
 		image.FillMode = canvas.ImageFillStretch
-		b.win.SetContent(container.NewStack(image, content))
-	} else {
-		b.win.SetContent(content)
+		layers = append(layers, image)
 	}
+	layers = append(layers, container.NewPadded(content), b.border)
+	b.win.SetContent(container.NewStack(layers...))
 	b.resizeBar()
 	b.win.CenterOnScreen()
 	b.search("")
@@ -140,6 +146,21 @@ func (b *Bar) loadSkin() {
 	b.skin = s
 }
 
+// applyBorder styles the bar outline from the skin.
+func (b *Bar) applyBorder() {
+	if b.border == nil {
+		return
+	}
+	if c, ok := skin.ParseColor(b.skin.Border.Color); ok {
+		b.border.StrokeColor = c
+	} else {
+		b.border.StrokeColor = color.Transparent
+	}
+	b.border.StrokeWidth = b.skin.Border.Width
+	b.border.CornerRadius = b.skin.Border.Radius
+	b.border.Refresh()
+}
+
 func (b *Bar) rowHeight() float32 {
 	if b.skin.Rows.Height > 0 {
 		return b.skin.Rows.Height
@@ -154,9 +175,10 @@ func (b *Bar) iconSize() float32 {
 	return defaultIconSize
 }
 
-// resizeBar applies the configured width and visible rows.
+// resizeBar applies the configured width and visible rows; the extra
+// padding accounts for the frame inset around the content.
 func (b *Bar) resizeBar() {
-	height := b.input.MinSize().Height + float32(b.cfg.Window.MaxItems)*b.rowHeight()
+	height := b.input.MinSize().Height + float32(b.cfg.Window.MaxItems)*b.rowHeight() + 8
 	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
 }
 
@@ -300,6 +322,7 @@ func (b *Bar) applyLive(old config.Config) {
 	if b.cfg.Window.Skin != old.Window.Skin {
 		b.loadSkin()
 		b.applyTheme()
+		b.applyBorder()
 		b.resizeBar()
 	}
 	if b.cfg.Behavior.ShowTrayIcon && !b.trayActive {

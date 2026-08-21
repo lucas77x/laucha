@@ -19,6 +19,7 @@ type Skin struct {
 	Colors   Colors `toml:"colors"`
 	Font     Font   `toml:"font"`
 	Rows     Rows   `toml:"rows"`
+	Border   Border `toml:"border"`
 	Images   Images `toml:"images"`
 
 	Dir string `toml:"-"` // folder the skin was loaded from
@@ -42,6 +43,13 @@ type Rows struct {
 	IconSize float32 `toml:"icon_size"`
 }
 
+// Border outlines the bar so it stands out against any desktop.
+type Border struct {
+	Color  string  `toml:"color"`
+	Width  float32 `toml:"width"`
+	Radius float32 `toml:"radius"`
+}
+
 type Images struct {
 	Background string `toml:"background"`
 }
@@ -61,8 +69,9 @@ func Default() Skin {
 			Selection:       "#3A2E36",
 			InputBackground: "#141317",
 		},
-		Font: Font{Size: 15},
-		Rows: Rows{Height: 46, IconSize: 30},
+		Font:   Font{Size: 15},
+		Rows:   Rows{Height: 46, IconSize: 30},
+		Border: Border{Color: "#E8A0B455", Width: 1, Radius: 10},
 	}
 }
 

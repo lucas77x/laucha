@@ -28,5 +28,10 @@ size = 15
 height = 46
 icon_size = 30
 
+[border]
+color = "#E8A0B455" # ear rose, translucent: outlines the bar quietly
+width = 1
+radius = 10
+
 # [images]
 # background = "background.png" # optional, stretched to the window

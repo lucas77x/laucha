@@ -88,7 +88,37 @@ patterns = ['(^|/)\.[^/]+'] # RE2 regex; default hides dotfiles
 
 ## Skins
 
-A skin is a folder dropped into `skins/<name>/` next to the binary. Each skin declares one of the predefined layout templates in its `skin.toml` and dresses it: colors, fonts, row sizes and an optional background image. `skins/classic` is the reference skin.
+A skin is a folder dropped into `skins/<name>/` next to the binary, or into `~/.config/laucha/skins/`. Each skin declares one of the predefined layout templates in its `skin.toml` and dresses it. Unset values fall back to the built-in classic look, so a three-line skin is valid. Switching skins applies live.
+
+```toml
+name = "My skin"
+template = "classic"
+
+[colors]
+background = "#1B191F"       # bar and windows
+foreground = "#E8E4DE"       # primary text
+muted = "#8A879B"            # file paths, placeholders
+accent = "#E8A0B4"           # focus, links, highlights
+selection = "#3A2E36"        # selected row
+input_background = "#141317" # search input
+
+[font]
+size = 15
+
+[rows]
+height = 46
+icon_size = 30
+
+[border]
+color = "#E8A0B455" # bar outline; supports #RRGGBBAA
+width = 1
+radius = 10
+
+[images]
+background = "background.png" # optional, stretched to the window
+```
+
+Elevation, separators, hover and scrollbar colors are derived from the declared palette automatically. `skins/classic` is the reference skin.
 
 ## Translations
 
