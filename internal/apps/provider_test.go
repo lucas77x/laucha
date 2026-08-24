@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func writeDesktop(t *testing.T, dir, name, content string) {
@@ -155,6 +156,47 @@ func TestResolveIcon(t *testing.T) {
 	if got := resolveIcon("myapp"); !strings.HasSuffix(got, "myapp.png") {
 		t.Errorf("resolveIcon(myapp) = %q, want themed png", got)
 	}
+}
+
+func TestLiveRescanFollowsInstallAndRemove(t *testing.T) {
+	data := t.TempDir()
+	apps := filepath.Join(data, "applications")
+	if err := os.MkdirAll(apps, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_DATA_DIRS", data)
+
+	p := NewProvider()
+	defer p.Close()
+	if len(p.Entries()) != 0 {
+		t.Fatalf("expected empty start, got %v", p.Entries())
+	}
+
+	writeDesktop(t, apps, "late.desktop", "[Desktop Entry]\nType=Application\nName=Late App\nExec=late\n")
+	waitFor(t, "installed app indexed", func() bool {
+		entries := p.Entries()
+		return len(entries) == 1 && entries[0].Name == "Late App"
+	})
+
+	if err := os.Remove(filepath.Join(apps, "late.desktop")); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "removed app dropped", func() bool {
+		return len(p.Entries()) == 0
+	})
+}
+
+func waitFor(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if cond() {
+			return
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s", what)
 }
 
 func TestResolveIconCoversEveryDataDir(t *testing.T) {
