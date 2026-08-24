@@ -5,25 +5,100 @@ package apps
 import (
 	"bufio"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/lucas77x/laucha/internal/launcher"
 )
 
+// rescanDelay collapses the burst of file events an install or
+// uninstall produces into a single rescan.
+const rescanDelay = 500 * time.Millisecond
+
 type Provider struct {
+	mu      sync.RWMutex
 	entries []launcher.Entry
+	watcher *fsnotify.Watcher
 }
 
-// NewProvider scans the standard application directories once at
-// startup. Live rescanning is on the roadmap.
+// NewProvider scans the standard application directories and keeps
+// watching them: an application installed while laucha runs appears
+// without a restart, an uninstalled one vanishes.
 func NewProvider() *Provider {
-	return &Provider{entries: scan()}
+	p := &Provider{entries: scan()}
+	p.watch()
+	return p
 }
 
-func (p *Provider) Entries() []launcher.Entry { return p.entries }
+func (p *Provider) Entries() []launcher.Entry {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.entries
+}
+
+func (p *Provider) Close() error {
+	if p.watcher == nil {
+		return nil
+	}
+	return p.watcher.Close()
+}
+
+func (p *Provider) watch() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Printf("apps: live rescan disabled: %v", err)
+		return
+	}
+	watched := 0
+	for _, dir := range dataDirs() {
+		if err := watcher.Add(filepath.Join(dir, "applications")); err == nil {
+			watched++
+		}
+	}
+	if watched == 0 {
+		watcher.Close()
+		return
+	}
+	p.watcher = watcher
+	go p.run()
+}
+
+func (p *Provider) run() {
+	var pending *time.Timer
+	for {
+		select {
+		case event, ok := <-p.watcher.Events:
+			if !ok {
+				return
+			}
+			if !strings.HasSuffix(event.Name, ".desktop") {
+				continue
+			}
+			if pending != nil {
+				pending.Stop()
+			}
+			pending = time.AfterFunc(rescanDelay, p.rescan)
+		case _, ok := <-p.watcher.Errors:
+			if !ok {
+				return
+			}
+		}
+	}
+}
+
+func (p *Provider) rescan() {
+	entries := scan()
+	p.mu.Lock()
+	p.entries = entries
+	p.mu.Unlock()
+}
 
 func scan() []launcher.Entry {
 	var entries []launcher.Entry
