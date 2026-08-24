@@ -156,3 +156,20 @@ func TestResolveIcon(t *testing.T) {
 		t.Errorf("resolveIcon(myapp) = %q, want themed png", got)
 	}
 }
+
+func TestResolveIconCoversEveryDataDir(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	exports := t.TempDir() // stands in for /var/lib/flatpak/exports/share
+	iconDir := filepath.Join(exports, "icons", "hicolor", "scalable", "apps")
+	if err := os.MkdirAll(iconDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(iconDir, "com.example.Flat.svg"), []byte("<svg/>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XDG_DATA_DIRS", exports)
+
+	if got := resolveIcon("com.example.Flat"); !strings.HasSuffix(got, "com.example.Flat.svg") {
+		t.Errorf("resolveIcon = %q, want the flatpak-style export", got)
+	}
+}

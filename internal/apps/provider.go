@@ -158,8 +158,11 @@ func parseExec(command string) []string {
 	return kept
 }
 
-// resolveIcon maps an Icon value to an image file using a simplified
-// hicolor/pixmaps lookup. Full icon-theme resolution is on the roadmap.
+// resolveIcon maps an Icon value to an image file, looking through
+// the hicolor theme of every XDG data dir — the same set the
+// .desktop scan uses — so flatpak and snap exports are covered too.
+// Full icon-theme resolution (themes beyond hicolor) is on the
+// roadmap.
 func resolveIcon(name string) string {
 	if name == "" {
 		return ""
@@ -171,17 +174,11 @@ func resolveIcon(name string) string {
 		return ""
 	}
 
-	var themeDirs []string
-	if home, err := os.UserHomeDir(); err == nil {
-		themeDirs = append(themeDirs, filepath.Join(home, ".local", "share", "icons"))
-	}
-	themeDirs = append(themeDirs, "/usr/share/icons")
-
 	sizes := []string{"scalable", "512x512", "256x256", "128x128", "64x64", "48x48"}
-	for _, base := range themeDirs {
+	for _, base := range dataDirs() {
 		for _, size := range sizes {
 			for _, ext := range []string{".svg", ".png"} {
-				candidate := filepath.Join(base, "hicolor", size, "apps", name+ext)
+				candidate := filepath.Join(base, "icons", "hicolor", size, "apps", name+ext)
 				if fileExists(candidate) {
 					return candidate
 				}
