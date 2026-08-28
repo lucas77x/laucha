@@ -182,9 +182,12 @@ internal/autostart   XDG autostart entry
 internal/i18n        translation wrapper (Fyne lang)
 internal/ui          bar, settings, tray, theming (Fyne)
 third_party/systray  vendored fyne.io/systray with SNI patches
+third_party/hotkey   vendored golang.design/x/hotkey with an event filter
 ```
 
 `third_party/systray` is a vendored copy of [fyne.io/systray](https://github.com/fyne-io/systray) (Apache-2.0) with two added functions (`SetIconName`, `SetStatus`): ayatana-based tray hosts (MATE, XFCE) ignore `IconPixmap`, so laucha publishes its tray icon by file path — the same strategy Qt applications use.
+
+`third_party/hotkey` is a vendored copy of [golang.design/x/hotkey](https://github.com/golang-design/hotkey) (MIT) whose X11 event loop only reports the registered combination. The upstream loop selects key events on the root window and then fires the callback for every one that arrives, so keys belonging to other applications — a desktop menu that grabs the Super key, a window manager shortcut — could open the launcher.
 
 ## Development
 
