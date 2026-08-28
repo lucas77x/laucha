@@ -45,7 +45,7 @@ Guidelines:
 - New logic comes with unit tests. **Every logic package must keep at least 80% coverage** — CI enforces it. `internal/ui` is exempt because it is Fyne rendering glue; when you add logic there, extract it into a testable unit (see `terminal.go`, `layout.go`, `hotkeycapture.go`) instead of burying it in widget wiring.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`…), in English.
 
-`third_party/systray` is a vendored dependency with two documented patches — sync carefully with upstream if you touch it.
+`third_party/systray` and `third_party/hotkey` are vendored dependencies carrying documented patches (each one marked `laucha patch` in the source) — sync carefully with upstream if you touch them.
 
 ## Workflow
 

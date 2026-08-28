@@ -56,3 +56,5 @@ require (
 )
 
 replace fyne.io/systray => ./third_party/systray
+
+replace golang.design/x/hotkey => ./third_party/hotkey
