@@ -205,7 +205,9 @@ func (b *Bar) resizeBar() {
 		visible = b.cfg.Window.MaxItems
 	}
 	base := b.top.MinSize().Height + theme.Padding()*2
-	height := base + float32(visible)*b.rowHeight()
+	// The list separates rows by one padding, so a row occupies its own
+	// height plus that gap.
+	height := base + float32(visible)*(b.rowHeight()+theme.Padding())
 	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
 	// Re-assert once the size hints settle; harmless when the first
 	// request already landed.
@@ -307,7 +309,7 @@ func (b *Bar) newList() *widget.List {
 			icon.SetMinSize(fyne.NewSize(b.iconSize(), b.iconSize()))
 			path := widget.NewLabel("")
 			path.TextStyle = fyne.TextStyle{Italic: true}
-			return newTappableRow(container.NewHBox(icon, widget.NewLabel(""), path))
+			return newTappableRow(container.NewHBox(icon, widget.NewLabel(""), path), b.rowHeight())
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			if id >= len(b.results) {
