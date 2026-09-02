@@ -1,0 +1,29 @@
+pkgbase = laucha-bin
+	pkgdesc = A minimalist, keyboard-driven launcher: live file index, application search and skins
+	pkgver = 1.1.1
+	pkgrel = 1
+	url = https://github.com/lucas77x/laucha
+	arch = x86_64
+	license = MIT
+	depends = libx11
+	depends = libglvnd
+	depends = wayland
+	depends = libxcursor
+	depends = libxrandr
+	depends = libxi
+	depends = libxinerama
+	depends = libxkbcommon
+	depends = libffi
+	depends = libbsd
+	provides = laucha=1.1.1
+	conflicts = laucha
+	source = laucha-1.1.1::https://github.com/lucas77x/laucha/releases/download/v1.1.1/laucha-linux-amd64
+	source = laucha-1.1.1.desktop::https://github.com/lucas77x/laucha/raw/v1.1.1/packaging/laucha.desktop
+	source = laucha-1.1.1.svg::https://github.com/lucas77x/laucha/raw/v1.1.1/assets/icon.svg
+	source = laucha-1.1.1.LICENSE::https://github.com/lucas77x/laucha/raw/v1.1.1/LICENSE
+	sha256sums = 14d0392456262b2c760136e2f54c38ebc5b122be53116582e118bb1c4b5f463c
+	sha256sums = 0a7ce5269860f15d6995880a8ab8c97fafbae9629964d2dc658f0d6b7610ee65
+	sha256sums = 0c8fa71aacbdd773fddff3382486370012c0882e135b0af4459ef2819d58b49b
+	sha256sums = be36de4661e2a5cccf30ec317ceec27fb59770be5927301c4973c8c98c4953e9
+
+pkgname = laucha-bin

@@ -17,10 +17,10 @@ source=("$_pkgname-$pkgver::$url/releases/download/v$pkgver/laucha-linux-amd64"
         "$_pkgname-$pkgver.desktop::$url/raw/v$pkgver/packaging/laucha.desktop"
         "$_pkgname-$pkgver.svg::$url/raw/v$pkgver/assets/icon.svg"
         "$_pkgname-$pkgver.LICENSE::$url/raw/v$pkgver/LICENSE")
-sha256sums=('SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP')
+sha256sums=('14d0392456262b2c760136e2f54c38ebc5b122be53116582e118bb1c4b5f463c'
+            '0a7ce5269860f15d6995880a8ab8c97fafbae9629964d2dc658f0d6b7610ee65'
+            '0c8fa71aacbdd773fddff3382486370012c0882e135b0af4459ef2819d58b49b'
+            'be36de4661e2a5cccf30ec317ceec27fb59770be5927301c4973c8c98c4953e9')
 
 package() {
   install -Dm755 "$srcdir/$_pkgname-$pkgver" "$pkgdir/usr/bin/$_pkgname"
