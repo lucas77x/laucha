@@ -1,0 +1,70 @@
+# Package definition for the .deb and .rpm attached to every release.
+# Built by the release workflow with nfpm; see .github/workflows/release.yml.
+name: laucha
+arch: amd64
+platform: linux
+version: ${VERSION}
+section: utils
+priority: optional
+maintainer: lucas77x <https://github.com/lucas77x>
+vendor: lucas77x
+homepage: https://github.com/lucas77x/laucha
+license: MIT
+description: |
+  A minimalist, keyboard-driven launcher for Linux.
+  Searches applications and files from a live index that stays fresh through
+  filesystem watchers, ranks what you actually open first, and is skinnable
+  and translatable.
+
+contents:
+  - src: ./laucha-linux-amd64
+    dst: /usr/bin/laucha
+    file_info:
+      mode: 0755
+  - src: ./packaging/laucha.desktop
+    dst: /usr/share/applications/laucha.desktop
+    file_info:
+      mode: 0644
+  - src: ./assets/icon.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/laucha.svg
+    file_info:
+      mode: 0644
+  - src: ./LICENSE
+    dst: /usr/share/doc/laucha/copyright
+    file_info:
+      mode: 0644
+
+overrides:
+  # Names verified against Debian/Ubuntu; the last five are opened at runtime
+  # by the toolkit, so they have to be declared even though ldd does not list
+  # them among the linked libraries.
+  deb:
+    depends:
+      - libx11-6
+      - libgl1
+      - libglx0
+      - libglvnd0
+      - libwayland-client0
+      - libffi8
+      - libbsd0
+      - libxcursor1
+      - libxrandr2
+      - libxi6
+      - libxinerama1
+      - libxkbcommon0
+  # Sonames rather than package names: they resolve on every RPM distribution
+  # instead of guessing Fedora's or openSUSE's naming.
+  rpm:
+    depends:
+      - libX11.so.6()(64bit)
+      - libGL.so.1()(64bit)
+      - libGLX.so.0()(64bit)
+      - libGLdispatch.so.0()(64bit)
+      - libwayland-client.so.0()(64bit)
+      - libffi.so.8()(64bit)
+      - libbsd.so.0()(64bit)
+      - libXcursor.so.1()(64bit)
+      - libXrandr.so.2()(64bit)
+      - libXi.so.6()(64bit)
+      - libXinerama.so.1()(64bit)
+      - libxkbcommon.so.0()(64bit)
