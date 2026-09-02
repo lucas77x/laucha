@@ -37,7 +37,7 @@ const (
 
 // Version is stamped by the release pipeline via -ldflags; dev builds
 // keep the suffix so update checks never downgrade anyone.
-var Version = "1.0.0-dev"
+var Version = "1.1.2-dev"
 
 // RecentSource lists recently modified files for the empty-query
 // view.

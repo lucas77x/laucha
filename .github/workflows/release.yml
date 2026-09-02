@@ -34,10 +34,21 @@ jobs:
             -o laucha-linux-amd64 .
           sha256sum laucha-linux-amd64 > checksums.txt
 
+      - name: Package
+        env:
+          NFPM_VERSION: v2.47.0
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@${NFPM_VERSION}
+          VERSION="${GITHUB_REF_NAME#v}" nfpm package -f packaging/nfpm.yaml -p deb -t .
+          VERSION="${GITHUB_REF_NAME#v}" nfpm package -f packaging/nfpm.yaml -p rpm -t .
+          sha256sum laucha_*.deb laucha-*.rpm >> checksums.txt
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             laucha-linux-amd64
+            laucha_*.deb
+            laucha-*.rpm
             checksums.txt
           generate_release_notes: true

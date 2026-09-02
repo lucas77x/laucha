@@ -20,6 +20,12 @@ import (
 func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "--version", "-v", "version":
+			fmt.Println("laucha", ui.Version)
+			return
+		case "--help", "-h", "help":
+			printUsage()
+			return
 		case "install":
 			if err := install.Install(); err != nil {
 				log.Fatalf("install: %v", err)
@@ -32,6 +38,10 @@ func main() {
 			}
 			fmt.Println("laucha removed from the applications menu")
 			return
+		default:
+			fmt.Fprintf(os.Stderr, "laucha: unknown argument %q\n\n", os.Args[1])
+			printUsage()
+			os.Exit(2)
 		}
 	}
 
@@ -74,4 +84,21 @@ func main() {
 		defer stop()
 	}
 	bar.Run()
+}
+
+// usage describes the command line. Running laucha without arguments
+// starts it, or shows the bar of the instance already running.
+func printUsage() {
+	fmt.Printf(`laucha %s — a minimalist, keyboard-driven launcher
+
+Usage:
+  laucha              start laucha, or show the bar of the running instance
+  laucha install      add laucha to the applications menu
+  laucha uninstall    remove it from the applications menu
+  laucha --version    print the version
+  laucha --help       print this help
+
+Settings live in ~/.config/laucha/config.toml and can be edited from the
+gear button in the bar or from the tray menu.
+`, ui.Version)
 }

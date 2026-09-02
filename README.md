@@ -60,23 +60,37 @@ File results carry the icon of their type and the folder they live in:
 
 ## Install
 
-### Binary (recommended)
+Every release carries a `.deb`, an `.rpm` and a plain binary. The packages
+install the launcher, its menu entry and its icon, and pull in the libraries
+it needs.
 
-Download the latest binary from [Releases](https://github.com/lucas77x/laucha/releases) — it is self-contained, no dependencies needed:
+### Debian, Ubuntu, Mint
 
 ```sh
-chmod +x laucha
-./laucha            # first run builds your file index
-./laucha install    # add laucha to your applications menu
+sudo apt install ./laucha_1.1.2_amd64.deb
 ```
 
-Remove the menu entry anytime with `./laucha uninstall`.
+### Fedora, openSUSE
+
+```sh
+sudo dnf install ./laucha-1.1.2-1.x86_64.rpm
+```
 
 ### Arch Linux
 
 ```sh
 yay -S laucha-bin     # or: paru -S laucha-bin
 ```
+
+### Any other distribution
+
+```sh
+chmod +x laucha-linux-amd64
+./laucha-linux-amd64            # first run builds your file index
+./laucha-linux-amd64 install    # add laucha to your applications menu
+```
+
+`laucha uninstall` removes that menu entry again.
 
 ### Build from source
 

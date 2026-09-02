@@ -1,5 +1,8 @@
 # Binaries
 /laucha
+laucha-linux-amd64
+*.deb
+*.rpm
 dist/
 
 # Go
