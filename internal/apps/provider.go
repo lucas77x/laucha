@@ -101,6 +101,7 @@ func (p *Provider) rescan() {
 }
 
 func scan() []launcher.Entry {
+	icons := newIconResolver()
 	var entries []launcher.Entry
 	seen := map[string]bool{} // desktop file IDs; earlier dirs take precedence
 	for _, dir := range dataDirs() {
@@ -114,7 +115,7 @@ func scan() []launcher.Entry {
 				return nil
 			}
 			seen[id] = true
-			if entry, ok := parseDesktopFile(path); ok {
+			if entry, ok := parseDesktopFile(path, icons); ok {
 				entries = append(entries, entry)
 			}
 			return nil
@@ -143,7 +144,7 @@ func dataDirs() []string {
 
 // parseDesktopFile extracts the fields laucha needs from the
 // [Desktop Entry] section.
-func parseDesktopFile(path string) (launcher.Entry, bool) {
+func parseDesktopFile(path string, icons *iconResolver) (launcher.Entry, bool) {
 	f, err := os.Open(path)
 	if err != nil {
 		return launcher.Entry{}, false
@@ -188,7 +189,7 @@ func parseDesktopFile(path string) (launcher.Entry, bool) {
 		Path:     path,
 		Exec:     argv,
 		Terminal: fields["Terminal"] == "true",
-		Icon:     resolveIcon(fields["Icon"]),
+		Icon:     icons.resolve(fields["Icon"]),
 	}, true
 }
 
@@ -231,47 +232,6 @@ func parseExec(command string) []string {
 		kept = append(kept, arg)
 	}
 	return kept
-}
-
-// resolveIcon maps an Icon value to an image file, looking through
-// the hicolor theme of every XDG data dir — the same set the
-// .desktop scan uses — so flatpak and snap exports are covered too.
-// Full icon-theme resolution (themes beyond hicolor) is on the
-// roadmap.
-func resolveIcon(name string) string {
-	if name == "" {
-		return ""
-	}
-	if filepath.IsAbs(name) {
-		if fileExists(name) {
-			return name
-		}
-		return ""
-	}
-
-	sizes := []string{"scalable", "512x512", "256x256", "128x128", "64x64", "48x48"}
-	for _, base := range dataDirs() {
-		for _, size := range sizes {
-			for _, ext := range []string{".svg", ".png"} {
-				candidate := filepath.Join(base, "icons", "hicolor", size, "apps", name+ext)
-				if fileExists(candidate) {
-					return candidate
-				}
-			}
-		}
-	}
-
-	candidates := []string{name + ".svg", name + ".png"}
-	if ext := filepath.Ext(name); ext == ".svg" || ext == ".png" {
-		candidates = []string{name}
-	}
-	for _, c := range candidates {
-		candidate := filepath.Join("/usr/share/pixmaps", c)
-		if fileExists(candidate) {
-			return candidate
-		}
-	}
-	return ""
 }
 
 func fileExists(path string) bool {

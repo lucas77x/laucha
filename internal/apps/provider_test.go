@@ -127,34 +127,82 @@ func TestParseExecQuoting(t *testing.T) {
 	}
 }
 
-func TestResolveIcon(t *testing.T) {
-	if got := resolveIcon(""); got != "" {
-		t.Errorf("resolveIcon(empty) = %q, want empty", got)
-	}
-	if got := resolveIcon("/definitely/missing/icon.png"); got != "" {
-		t.Errorf("resolveIcon(missing abs) = %q, want empty", got)
-	}
-
-	dir := t.TempDir()
-	abs := filepath.Join(dir, "icon.png")
-	if err := os.WriteFile(abs, []byte("png"), 0o644); err != nil {
+func writeIconFile(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if got := resolveIcon(abs); got != abs {
-		t.Errorf("resolveIcon(existing abs) = %q, want %q", got, abs)
+	if err := os.WriteFile(path, []byte("icon"), 0o644); err != nil {
+		t.Fatal(err)
 	}
+}
 
+func TestIconResolverAbsolutePaths(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_DATA_DIRS", t.TempDir())
+	r := newIconResolver()
+
+	if got := r.resolve(""); got != "" {
+		t.Errorf("resolve(empty) = %q, want empty", got)
+	}
+	if got := r.resolve("/definitely/missing/icon.png"); got != "" {
+		t.Errorf("resolve(missing absolute) = %q, want empty", got)
+	}
+	abs := filepath.Join(t.TempDir(), "icon.png")
+	writeIconFile(t, abs)
+	if got := r.resolve(abs); got != abs {
+		t.Errorf("resolve(existing absolute) = %q, want %q", got, abs)
+	}
+}
+
+func TestIconResolverFindsIconsOutsideHicolor(t *testing.T) {
 	home := t.TempDir()
+	data := t.TempDir()
 	t.Setenv("HOME", home)
-	themed := filepath.Join(home, ".local", "share", "icons", "hicolor", "48x48", "apps")
-	if err := os.MkdirAll(themed, 0o755); err != nil {
+	t.Setenv("XDG_DATA_DIRS", data)
+	writeIconFile(t, filepath.Join(home, ".config", "gtk-3.0", "settings.ini"))
+	if err := os.WriteFile(filepath.Join(home, ".config", "gtk-3.0", "settings.ini"),
+		[]byte("[Settings]\ngtk-icon-theme-name=MyTheme\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(themed, "myapp.png"), []byte("png"), 0o644); err != nil {
-		t.Fatal(err)
+	// The same name in the configured theme and in hicolor.
+	writeIconFile(t, filepath.Join(data, "icons", "MyTheme", "48x48", "apps", "editor.png"))
+	writeIconFile(t, filepath.Join(data, "icons", "hicolor", "48x48", "apps", "editor.png"))
+	// Names desktop entries borrow from the theme live outside apps/.
+	writeIconFile(t, filepath.Join(data, "icons", "OtherTheme", "scalable", "places", "folder-open.svg"))
+	// Dotted names must survive the extension trimming.
+	writeIconFile(t, filepath.Join(data, "icons", "hicolor", "scalable", "apps", "com.example.App.svg"))
+
+	r := newIconResolver()
+
+	if got := r.resolve("editor"); !strings.Contains(got, "MyTheme") {
+		t.Errorf("resolve(editor) = %q, want the configured theme to win", got)
 	}
-	if got := resolveIcon("myapp"); !strings.HasSuffix(got, "myapp.png") {
-		t.Errorf("resolveIcon(myapp) = %q, want themed png", got)
+	if got := r.resolve("folder-open"); !strings.HasSuffix(got, "folder-open.svg") {
+		t.Errorf("resolve(folder-open) = %q, want the themed places icon", got)
+	}
+	if got := r.resolve("editor.png"); !strings.HasSuffix(got, "editor.png") {
+		t.Errorf("resolve(editor.png) = %q, want the extension to be trimmed", got)
+	}
+	if got := r.resolve("com.example.App"); !strings.HasSuffix(got, "com.example.App.svg") {
+		t.Errorf("resolve(com.example.App) = %q, want the dotted name intact", got)
+	}
+	if got := r.resolve("nothing-like-this"); got != "" {
+		t.Errorf("resolve(unknown) = %q, want empty", got)
+	}
+}
+
+func TestIconScorePrefersThemeThenSize(t *testing.T) {
+	preferred := []string{"MyTheme", "hicolor"}
+	themed := iconScore(filepath.Join("MyTheme", "48x48", "apps", "a.png"), ".png", preferred)
+	fallback := iconScore(filepath.Join("hicolor", "512x512", "apps", "a.png"), ".png", preferred)
+	if themed <= fallback {
+		t.Error("the configured theme must outrank a bigger icon from another theme")
+	}
+	small := iconScore(filepath.Join("hicolor", "48x48", "apps", "a.png"), ".png", preferred)
+	big := iconScore(filepath.Join("hicolor", "scalable", "apps", "a.svg"), ".svg", preferred)
+	if big <= small {
+		t.Error("within a theme, scalable artwork must outrank a small bitmap")
 	}
 }
 
@@ -197,21 +245,4 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 		time.Sleep(25 * time.Millisecond)
 	}
 	t.Fatalf("timed out waiting for %s", what)
-}
-
-func TestResolveIconCoversEveryDataDir(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-	exports := t.TempDir() // stands in for /var/lib/flatpak/exports/share
-	iconDir := filepath.Join(exports, "icons", "hicolor", "scalable", "apps")
-	if err := os.MkdirAll(iconDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(iconDir, "com.example.Flat.svg"), []byte("<svg/>"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("XDG_DATA_DIRS", exports)
-
-	if got := resolveIcon("com.example.Flat"); !strings.HasSuffix(got, "com.example.Flat.svg") {
-		t.Errorf("resolveIcon = %q, want the flatpak-style export", got)
-	}
 }

@@ -205,7 +205,9 @@ func (b *Bar) resizeBar() {
 		visible = b.cfg.Window.MaxItems
 	}
 	base := b.top.MinSize().Height + theme.Padding()*2
-	height := base + float32(visible)*b.rowHeight()
+	// The list separates rows by one padding, so a row occupies its own
+	// height plus that gap.
+	height := base + float32(visible)*(b.rowHeight()+theme.Padding())
 	b.win.Resize(fyne.NewSize(b.cfg.Window.Width, height))
 	// Re-assert once the size hints settle; harmless when the first
 	// request already landed.
@@ -307,7 +309,7 @@ func (b *Bar) newList() *widget.List {
 			icon.SetMinSize(fyne.NewSize(b.iconSize(), b.iconSize()))
 			path := widget.NewLabel("")
 			path.TextStyle = fyne.TextStyle{Italic: true}
-			return newTappableRow(container.NewHBox(icon, widget.NewLabel(""), path))
+			return newTappableRow(container.NewHBox(icon, widget.NewLabel(""), path), b.rowHeight())
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			if id >= len(b.results) {
@@ -319,13 +321,20 @@ func (b *Bar) newList() *widget.List {
 			icon := cells.Objects[0].(*canvas.Image)
 			name := cells.Objects[1].(*widget.Label)
 			path := cells.Objects[2].(*widget.Label)
-			if entry.Kind == launcher.KindFile {
+			switch {
+			case entry.Kind == launcher.KindFile:
 				icon.File = ""
 				icon.Resource = fileIcon(entry.Name)
 				path.SetText(displayDir(entry.Path))
-			} else {
+			case entry.Icon != "":
 				icon.Resource = nil
 				icon.File = entry.Icon
+				path.SetText("")
+			default:
+				// Rows are recycled: an application whose icon could not
+				// be resolved must clear it, never inherit the previous.
+				icon.File = ""
+				icon.Resource = theme.FileApplicationIcon()
 				path.SetText("")
 			}
 			icon.Refresh()

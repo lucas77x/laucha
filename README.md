@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/bar-dark.png" width="600" alt="laucha bar, default dark skin" />
+  <img src="docs/bar-dark.png" width="720" alt="laucha bar searching applications and files" />
 </p>
 
 ## Why laucha?
@@ -27,7 +27,7 @@ Every launcher kept forgetting where things are. laucha keeps a **persistent ind
 
 ## Features
 
-- **App search** with real icons — fuzzy and case-insensitive: `spo` finds Spotify, `calc` finds the calculator
+- **App search** — fuzzy and case-insensitive: `spo` finds Spotify, `calc` finds the calculator. Icons come from your desktop's own icon theme, so applications look exactly like they do in your menu
 - **Live file index** — SQLite-backed, kept fresh by inotify watchers; new files are searchable instantly
 - **Multi-term search across name and path**, in any order: `notas nextcloud` and `nextcloud notas` both narrow `notas.txt` down to the copy under `~/Nextcloud`
 - **Frecency ranking** — equally good matches surface what you actually use first; ties prefer shallower paths
@@ -45,9 +45,15 @@ Every launcher kept forgetting where things are. laucha keeps a **persistent ind
 
 ## Screenshots
 
-| Default Light | Settings |
+File results carry the icon of their type and the folder they live in:
+
+<p align="center">
+  <img src="docs/bar-files.png" width="720" alt="file results with per-type icons" />
+</p>
+
+| Default Light skin | Settings |
 | --- | --- |
-| <img src="docs/bar-light.png" width="420" alt="default light skin" /> | <img src="docs/settings.png" width="420" alt="settings window" /> |
+| <img src="docs/bar-light.png" width="420" alt="the default light skin" /> | <img src="docs/settings.png" width="380" alt="the search settings, with the advanced filters" /> |
 
 ## Install
 
