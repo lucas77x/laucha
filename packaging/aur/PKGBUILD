@@ -1,0 +1,30 @@
+# Maintainer: lucas77x <https://github.com/lucas77x>
+pkgname=laucha-bin
+_pkgname=laucha
+pkgver=1.1.1
+pkgrel=1
+pkgdesc="A minimalist, keyboard-driven launcher: live file index, application search and skins"
+arch=('x86_64')
+url="https://github.com/lucas77x/laucha"
+license=('MIT')
+# libx11, libglvnd and wayland are linked; the rest are opened at runtime by
+# the toolkit, so a minimal install needs them declared as well.
+depends=('libx11' 'libglvnd' 'wayland' 'libxcursor' 'libxrandr' 'libxi'
+         'libxinerama' 'libxkbcommon' 'libffi' 'libbsd')
+provides=("$_pkgname=$pkgver")
+conflicts=("$_pkgname")
+source=("$_pkgname-$pkgver::$url/releases/download/v$pkgver/laucha-linux-amd64"
+        "$_pkgname-$pkgver.desktop::$url/raw/v$pkgver/packaging/laucha.desktop"
+        "$_pkgname-$pkgver.svg::$url/raw/v$pkgver/assets/icon.svg"
+        "$_pkgname-$pkgver.LICENSE::$url/raw/v$pkgver/LICENSE")
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP')
+
+package() {
+  install -Dm755 "$srcdir/$_pkgname-$pkgver" "$pkgdir/usr/bin/$_pkgname"
+  install -Dm644 "$srcdir/$_pkgname-$pkgver.desktop" "$pkgdir/usr/share/applications/$_pkgname.desktop"
+  install -Dm644 "$srcdir/$_pkgname-$pkgver.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/$_pkgname.svg"
+  install -Dm644 "$srcdir/$_pkgname-$pkgver.LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
