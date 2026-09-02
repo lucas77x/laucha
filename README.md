@@ -240,3 +240,10 @@ The About screen (tray → About, or Settings → About) checks GitHub Releases 
 ## License
 
 [MIT](LICENSE)
+
+---
+
+<p align="center">
+  Made with ❤️ from Latam (Buenos Aires, Argentina) to the world 🌍<br/>
+  and to the open-source community that makes projects like this possible.
+</p>
