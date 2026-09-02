@@ -17,8 +17,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/bar-dark.png" width="720" alt="laucha bar searching applications and files" />
+  <img src="docs/demo.gif" width="720" alt="laucha searching applications and files" />
 </p>
+
+> **X11 for now.** The global hotkey needs an X11 key grab, so laucha runs on X11 sessions (and on XWayland without the hotkey). Wayland support is on the roadmap.
 
 ## Why laucha?
 
@@ -209,6 +211,7 @@ The About screen (tray → About, or Settings → About) checks GitHub Releases 
 
 ## Roadmap
 
+- Wayland support
 - Visual skin creator/editor
 - Verified self-updating binary (checksummed release assets)
 - Windows and macOS support
