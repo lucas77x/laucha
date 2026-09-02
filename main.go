@@ -60,14 +60,16 @@ func main() {
 		log.Printf("i18n: %v (using English)", err)
 	}
 
-	deps := ui.Deps{Apps: apps.NewProvider()}
-	if idx, err := index.New(cfg.EffectiveRoots(), cfg.EffectiveFilter()); err != nil {
-		log.Printf("file index disabled: %v", err)
-	} else {
-		defer idx.Close()
-		deps.Files = idx
-		deps.Recents = idx
-		deps.Reindex = idx
+	// The index opens itself the first time file results are asked
+	// for, so running with file search off costs nothing.
+	files := index.NewLazy(cfg.EffectiveRoots(), cfg.EffectiveFilter())
+	defer files.Close()
+
+	deps := ui.Deps{
+		Apps:    apps.NewProvider(),
+		Files:   files,
+		Recents: files,
+		Reindex: files,
 	}
 	if opens, err := usage.Open(); err != nil {
 		log.Printf("usage stats disabled: %v", err)
