@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=laucha
+Comment=Minimalist keyboard-driven launcher
+Exec=laucha
+Icon=laucha
+Terminal=false
+Categories=Utility;
+Keywords=launcher;search;files;applications;
+StartupNotify=false
