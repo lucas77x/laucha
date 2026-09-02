@@ -321,13 +321,20 @@ func (b *Bar) newList() *widget.List {
 			icon := cells.Objects[0].(*canvas.Image)
 			name := cells.Objects[1].(*widget.Label)
 			path := cells.Objects[2].(*widget.Label)
-			if entry.Kind == launcher.KindFile {
+			switch {
+			case entry.Kind == launcher.KindFile:
 				icon.File = ""
 				icon.Resource = fileIcon(entry.Name)
 				path.SetText(displayDir(entry.Path))
-			} else {
+			case entry.Icon != "":
 				icon.Resource = nil
 				icon.File = entry.Icon
+				path.SetText("")
+			default:
+				// Rows are recycled: an application whose icon could not
+				// be resolved must clear it, never inherit the previous.
+				icon.File = ""
+				icon.Resource = theme.FileApplicationIcon()
 				path.SetText("")
 			}
 			icon.Refresh()
