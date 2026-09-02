@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/lucas77x/laucha/actions/workflows/ci.yml"><img src="https://github.com/lucas77x/laucha/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go&logoColor=white" alt="Go 1.27+" />
   <img src="https://img.shields.io/badge/platform-Linux%20(X11)-FCC624?logo=linux&logoColor=black" alt="Linux X11" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license" />
@@ -126,7 +127,8 @@ roots = ["~"]
 mode = "exclude" # exclude | include-only
 extensions = []
 names = ["node_modules", "__pycache__"]
-patterns = ['(^|/)\.[^/]+'] # RE2 regex; default hides dotfiles
+# RE2 patterns; the defaults hide dotfiles, the Go module cache and snap data
+patterns = ['(^|/)\.[^/]+', '(^|/)go/pkg(/|$)', '(^|/)snap(/|$)']
 ```
 
 Search filtering has two modes, switchable from Settings → Search. **Default configuration** uses laucha's built-in roots and exclusions (package caches, hidden files) — and inherits improvements automatically on every update. **Advanced configuration** replaces the defaults entirely: pick the indexed folders, the filter mode (exclude listed / include only listed) and the three matchers (extensions, names, RE2 patterns). Saving reindexes in the background while search keeps working.
