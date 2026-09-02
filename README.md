@@ -157,6 +157,17 @@ Search filtering has two modes, switchable from Settings → Search. **Default c
 
 If some directories exceed the inotify watch limit, laucha logs it and search still works — raise `fs.inotify.max_user_watches` to watch everything.
 
+## Resource use
+
+The index lives in memory so results appear as you type, and the interface is
+drawn with OpenGL through Fyne. On a home directory of about 22,000 indexed
+files laucha settles around 180 MB of resident memory. Most of that is not the
+launcher: an empty Fyne window already costs 131 MB, and roughly 50 MB of the
+total are graphics libraries shared with every other OpenGL application on the
+desktop. The file index itself accounts for about 17 MB, and it is only opened
+the first time file results are asked for — with file search off it is never
+opened at all.
+
 ## Skins
 
 A skin is a folder dropped into `skins/<name>/` next to the binary, or into `~/.config/laucha/skins/`. Unset values fall back to the built-in defaults, so a three-line skin is valid. Switching skins applies live.
