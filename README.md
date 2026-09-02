@@ -72,6 +72,12 @@ chmod +x laucha
 
 Remove the menu entry anytime with `./laucha uninstall`.
 
+### Arch Linux
+
+```sh
+yay -S laucha-bin     # or: paru -S laucha-bin
+```
+
 ### Build from source
 
 ```sh
