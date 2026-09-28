@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lucas77x/laucha/internal/config"
+	"github.com/lucas77x/laucha/internal/launcher"
 )
 
 func TestReconfigureSwapsRootsAndFilter(t *testing.T) {
@@ -89,6 +90,61 @@ func TestRecentOrdersNewestFirst(t *testing.T) {
 	if len(recent) != 1 || recent[0].Name != "newer.txt" {
 		t.Errorf("Recent(1) = %v, want newer.txt first", recent)
 	}
+}
+
+func TestRecentSkipsDirs(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "sub", "file.txt"))
+
+	idx, err := New([]string{root}, config.Filter{Mode: "exclude"})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer idx.Close()
+	waitFor(t, "walk", func() bool { return hasName(idx, "file.txt") })
+
+	if !hasKind(idx, "sub", launcher.KindDir) {
+		t.Fatal("expected sub to be indexed as a dir")
+	}
+
+	recent := idx.Recent(10)
+	for _, e := range recent {
+		if e.Kind == launcher.KindDir {
+			t.Errorf("Recent() must skip dirs, got %+v", e)
+		}
+	}
+}
+
+func TestAddAcceptsDir(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	root := t.TempDir()
+
+	idx, err := New([]string{root}, config.Filter{Mode: "exclude"})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer idx.Close()
+	waitFor(t, "initial walk", func() bool { return idx.watcher != nil })
+
+	newDir := filepath.Join(root, "newdir")
+	if err := os.Mkdir(newDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	idx.add(newDir)
+
+	if !hasKind(idx, "newdir", launcher.KindDir) {
+		t.Error("add() must accept a directory and index it as KindDir")
+	}
+}
+
+func hasKind(idx *Index, name string, kind launcher.Kind) bool {
+	for _, e := range idx.Entries() {
+		if e.Name == name && e.Kind == kind {
+			return true
+		}
+	}
+	return false
 }
 
 func hasName(idx *Index, name string) bool {

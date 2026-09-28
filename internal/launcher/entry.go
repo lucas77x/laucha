@@ -9,6 +9,7 @@ type Kind int
 const (
 	KindApp Kind = iota
 	KindFile
+	KindDir
 )
 
 // Entry is anything the bar can list and open.
@@ -19,5 +20,5 @@ type Entry struct {
 	Exec     []string  // launch argv, apps only; never run through a shell
 	Terminal bool      // apps only: must run inside a terminal emulator
 	Icon     string    // resolved icon image path, may be empty
-	ModTime  time.Time // files only; drives the recent view
+	ModTime  time.Time // files and dirs; drives the recent view (dirs are excluded from it)
 }

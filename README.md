@@ -31,7 +31,7 @@ Every launcher kept forgetting where things are. laucha keeps a **persistent ind
 ## Features
 
 - **App search** — fuzzy and case-insensitive: `spo` finds Spotify, `calc` finds the calculator. Icons come from your desktop's own icon theme, so applications look exactly like they do in your menu
-- **Live file index** — SQLite-backed, kept fresh by inotify watchers; new files are searchable instantly
+- **Live file index** — SQLite-backed, kept fresh by inotify watchers; new files and folders are searchable instantly (folders open in your file manager)
 - **Multi-term search across name and path**, in any order: `notas nextcloud` and `nextcloud notas` both narrow `notas.txt` down to the copy under `~/Nextcloud`
 - **Frecency ranking** — equally good matches surface what you actually use first; ties prefer shallower paths
 - **Recent files view** when the bar opens, newest first
@@ -153,7 +153,7 @@ names = ["node_modules", "__pycache__"]
 patterns = ['(^|/)\.[^/]+', '(^|/)go/pkg(/|$)', '(^|/)snap(/|$)']
 ```
 
-Search filtering has two modes, switchable from Settings → Search. **Default configuration** uses laucha's built-in roots and exclusions (package caches, hidden files) — and inherits improvements automatically on every update. **Advanced configuration** replaces the defaults entirely: pick the indexed folders, the filter mode (exclude listed / include only listed) and the three matchers (extensions, names, RE2 patterns). Saving reindexes in the background while search keeps working.
+Search filtering has two modes, switchable from Settings → Search. **Default configuration** uses laucha's built-in roots and exclusions (package caches, hidden files) — and inherits improvements automatically on every update. **Advanced configuration** replaces the defaults entirely: pick the indexed folders, the filter mode (exclude listed / include only listed) and the three matchers (extensions, names, RE2 patterns). In include-only mode a folder is listed only when its name or path matches; extensions never apply to folders. Saving reindexes in the background while search keeps working.
 
 If some directories exceed the inotify watch limit, laucha logs it and search still works — raise `fs.inotify.max_user_watches` to watch everything.
 

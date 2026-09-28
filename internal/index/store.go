@@ -25,7 +25,8 @@ func openStore(path string) (*store, error) {
 		`CREATE TABLE IF NOT EXISTS files (
 			path  TEXT PRIMARY KEY,
 			name  TEXT NOT NULL,
-			mtime INTEGER NOT NULL
+			mtime INTEGER NOT NULL,
+			kind  INTEGER NOT NULL DEFAULT 1
 		)`,
 	}
 	for _, stmt := range stmts {
@@ -34,11 +35,56 @@ func openStore(path string) (*store, error) {
 			return nil, err
 		}
 	}
+	if err := migrateKindColumn(db); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return &store{db: db}, nil
 }
 
+// migrateKindColumn adds the kind column to a database created before
+// directories were indexed. CREATE TABLE IF NOT EXISTS is a no-op on
+// an existing table, so an old three-column database needs an
+// explicit ALTER; new databases already have the column and are left
+// untouched. Existing rows default to KindFile (1), which is correct
+// since only files were ever stored before this migration.
+func migrateKindColumn(db *sql.DB) error {
+	rows, err := db.Query(`PRAGMA table_info(files)`)
+	if err != nil {
+		return err
+	}
+	hasKind := false
+	for rows.Next() {
+		var cid, notNull, pk int
+		var name, colType string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &dflt, &pk); err != nil {
+			rows.Close()
+			return err
+		}
+		if name == "kind" {
+			hasKind = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	// Drain and close before altering the table: the pragma query and
+	// the ALTER must not overlap on the same connection.
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	if hasKind {
+		return nil
+	}
+
+	_, err = db.Exec(`ALTER TABLE files ADD COLUMN kind INTEGER NOT NULL DEFAULT 1`)
+	return err
+}
+
 func (s *store) loadAll() ([]launcher.Entry, error) {
-	rows, err := s.db.Query(`SELECT path, name, mtime FROM files`)
+	rows, err := s.db.Query(`SELECT path, name, mtime, kind FROM files`)
 	if err != nil {
 		return nil, err
 	}
@@ -48,10 +94,11 @@ func (s *store) loadAll() ([]launcher.Entry, error) {
 	for rows.Next() {
 		var e launcher.Entry
 		var mtime int64
-		if err := rows.Scan(&e.Path, &e.Name, &mtime); err != nil {
+		var kind int
+		if err := rows.Scan(&e.Path, &e.Name, &mtime, &kind); err != nil {
 			return nil, err
 		}
-		e.Kind = launcher.KindFile
+		e.Kind = launcher.Kind(kind)
 		e.ModTime = time.Unix(mtime, 0)
 		entries = append(entries, e)
 	}
@@ -70,13 +117,13 @@ func (s *store) replaceAll(entries []launcher.Entry) error {
 	if _, err := tx.Exec(`DELETE FROM files`); err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(`INSERT INTO files (path, name, mtime) VALUES (?, ?, ?)`)
+	stmt, err := tx.Prepare(`INSERT INTO files (path, name, mtime, kind) VALUES (?, ?, ?, ?)`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 	for _, e := range entries {
-		if _, err := stmt.Exec(e.Path, e.Name, e.ModTime.Unix()); err != nil {
+		if _, err := stmt.Exec(e.Path, e.Name, e.ModTime.Unix(), int(e.Kind)); err != nil {
 			return err
 		}
 	}
@@ -84,9 +131,9 @@ func (s *store) replaceAll(entries []launcher.Entry) error {
 }
 
 func (s *store) upsert(e launcher.Entry) error {
-	_, err := s.db.Exec(`INSERT INTO files (path, name, mtime) VALUES (?, ?, ?)
-		ON CONFLICT(path) DO UPDATE SET name = excluded.name, mtime = excluded.mtime`,
-		e.Path, e.Name, e.ModTime.Unix())
+	_, err := s.db.Exec(`INSERT INTO files (path, name, mtime, kind) VALUES (?, ?, ?, ?)
+		ON CONFLICT(path) DO UPDATE SET name = excluded.name, mtime = excluded.mtime, kind = excluded.kind`,
+		e.Path, e.Name, e.ModTime.Unix(), int(e.Kind))
 	return err
 }
 

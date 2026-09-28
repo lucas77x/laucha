@@ -86,11 +86,17 @@ func (i *Index) Entries() []launcher.Entry {
 	return i.snapshot
 }
 
-// Recent returns up to n files, newest modification first.
+// Recent returns up to n files, newest modification first. Directories
+// are skipped: their mtime changes whenever their content does, which
+// would otherwise flood the recent view.
 func (i *Index) Recent(n int) []launcher.Entry {
 	entries := i.Entries()
-	recent := make([]launcher.Entry, len(entries))
-	copy(recent, entries)
+	recent := make([]launcher.Entry, 0, len(entries))
+	for _, e := range entries {
+		if e.Kind != launcher.KindDir {
+			recent = append(recent, e)
+		}
+	}
 	sort.Slice(recent, func(a, b int) bool {
 		return recent[a].ModTime.After(recent[b].ModTime)
 	})
@@ -137,17 +143,17 @@ func (i *Index) reconcile() {
 	roots, filter := i.roots, i.filter
 	i.mu.RUnlock()
 
-	files, dirs := walk(roots, filter)
+	entries, dirs := walk(roots, filter)
 
 	i.mu.Lock()
-	i.byPath = make(map[string]launcher.Entry, len(files))
-	for _, e := range files {
+	i.byPath = make(map[string]launcher.Entry, len(entries))
+	for _, e := range entries {
 		i.byPath[e.Path] = e
 	}
 	i.dirty = true
 	i.mu.Unlock()
 
-	if err := i.store.replaceAll(files); err != nil {
+	if err := i.store.replaceAll(entries); err != nil {
 		log.Printf("index: persisting: %v", err)
 	}
 
@@ -163,17 +169,28 @@ func (i *Index) reconcile() {
 
 func (i *Index) add(path string) {
 	info, err := os.Stat(path)
-	if err != nil || !info.Mode().IsRegular() {
+	if err != nil {
 		return
 	}
-	if !i.currentFilter().IncludeFile(path) {
-		return
-	}
+	filter := i.currentFilter()
 	entry := launcher.Entry{
-		Kind:    launcher.KindFile,
 		Name:    filepath.Base(path),
 		Path:    path,
 		ModTime: info.ModTime(),
+	}
+	switch {
+	case info.IsDir():
+		if !filter.IncludeDir(path) {
+			return
+		}
+		entry.Kind = launcher.KindDir
+	case info.Mode().IsRegular():
+		if !filter.IncludeFile(path) {
+			return
+		}
+		entry.Kind = launcher.KindFile
+	default:
+		return
 	}
 
 	i.mu.Lock()

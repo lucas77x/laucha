@@ -326,6 +326,10 @@ func (b *Bar) newList() *widget.List {
 				icon.File = ""
 				icon.Resource = fileIcon(entry.Name)
 				path.SetText(displayDir(entry.Path))
+			case entry.Kind == launcher.KindDir:
+				icon.File = ""
+				icon.Resource = theme.FolderIcon()
+				path.SetText(displayDir(entry.Path))
 			case entry.Icon != "":
 				icon.Resource = nil
 				icon.File = entry.Icon
@@ -463,6 +467,11 @@ func open(entry launcher.Entry) error {
 			argv = terminalCommand(argv)
 		}
 		cmd = exec.Command(argv[0], argv[1:]...)
+	case launcher.KindDir:
+		// Directories always go through the desktop's file manager,
+		// never execution: isExecutable requires a regular file, so
+		// this is already implied, but spell it out for clarity.
+		cmd = exec.Command("xdg-open", entry.Path)
 	default:
 		if isExecutable(entry.Path) {
 			cmd = exec.Command(entry.Path)
