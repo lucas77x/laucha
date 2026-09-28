@@ -9,9 +9,11 @@ import (
 	"github.com/lucas77x/laucha/internal/launcher"
 )
 
-// walk scans the roots and returns the files that pass the filter,
-// plus every traversed directory (the watcher needs them).
-func walk(roots []string, filter *Filter) (files []launcher.Entry, dirs []string) {
+// walk scans the roots and returns the files and directories that
+// pass the filter, plus every traversed directory (the watcher needs
+// them, whether or not they end up in entries). Roots themselves are
+// never indexed.
+func walk(roots []string, filter *Filter) (entries []launcher.Entry, dirs []string) {
 	for _, root := range roots {
 		filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
@@ -22,6 +24,18 @@ func walk(roots []string, filter *Filter) (files []launcher.Entry, dirs []string
 					return filepath.SkipDir
 				}
 				dirs = append(dirs, path)
+				if path != root && filter.IncludeDir(path) {
+					info, err := d.Info()
+					if err != nil {
+						return nil
+					}
+					entries = append(entries, launcher.Entry{
+						Kind:    launcher.KindDir,
+						Name:    d.Name(),
+						Path:    path,
+						ModTime: info.ModTime(),
+					})
+				}
 				return nil
 			}
 			if !d.Type().IsRegular() || !filter.IncludeFile(path) {
@@ -31,7 +45,7 @@ func walk(roots []string, filter *Filter) (files []launcher.Entry, dirs []string
 			if err != nil {
 				return nil
 			}
-			files = append(files, launcher.Entry{
+			entries = append(entries, launcher.Entry{
 				Kind:    launcher.KindFile,
 				Name:    d.Name(),
 				Path:    path,
@@ -40,7 +54,7 @@ func walk(roots []string, filter *Filter) (files []launcher.Entry, dirs []string
 			return nil
 		})
 	}
-	return files, dirs
+	return entries, dirs
 }
 
 // expandRoots resolves "~" and "~/dir" against the user home.

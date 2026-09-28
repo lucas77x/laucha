@@ -37,6 +37,42 @@ func TestExcludeMode(t *testing.T) {
 	}
 }
 
+func TestIncludeDirExcludeMode(t *testing.T) {
+	f := NewFilter(config.Filter{
+		Mode:  "exclude",
+		Names: []string{"node_modules"},
+	})
+
+	if f.IncludeDir("/home/u/node_modules") {
+		t.Error("IncludeDir(node_modules) = true, want false")
+	}
+	if !f.IncludeDir("/home/u/projects") {
+		t.Error("IncludeDir(projects) = false, want true")
+	}
+}
+
+func TestIncludeDirIncludeOnlyMode(t *testing.T) {
+	f := NewFilter(config.Filter{
+		Mode:       "include-only",
+		Extensions: []string{".pdf"},
+		Names:      []string{"docs"},
+		Patterns:   []string{`^/home/u/photos`},
+	})
+
+	if !f.IncludeDir("/home/u/work/docs") {
+		t.Error("IncludeDir(docs) = false, want true: matched by name")
+	}
+	if !f.IncludeDir("/home/u/photos") {
+		t.Error("IncludeDir(photos) = false, want true: matched by pattern")
+	}
+	if f.IncludeDir("/home/u/archive.pdf") {
+		t.Error("IncludeDir(archive.pdf) = true, want false: extensions must not apply to directories")
+	}
+	if f.IncludeDir("/home/u/other") {
+		t.Error("IncludeDir(other) = true, want false: unmatched directory")
+	}
+}
+
 func TestDefaultFilterExcludesCaches(t *testing.T) {
 	f := NewFilter(config.Default().Filter)
 

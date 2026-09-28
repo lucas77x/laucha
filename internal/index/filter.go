@@ -61,6 +61,27 @@ func (f *Filter) EnterDir(path string) bool {
 	return !f.matches(path)
 }
 
+// IncludeDir reports whether a directory itself belongs in the index,
+// as opposed to merely being traversed. In exclude mode this mirrors
+// EnterDir: a directory is indexed whenever the walker would descend
+// into it. In include-only mode a directory is indexed only when its
+// base name or path is explicitly matched by names or patterns;
+// extensions never apply to directories.
+func (f *Filter) IncludeDir(path string) bool {
+	if !f.includeOnly {
+		return !f.matches(path)
+	}
+	if f.names[filepath.Base(path)] {
+		return true
+	}
+	for _, re := range f.patterns {
+		if re.MatchString(path) {
+			return true
+		}
+	}
+	return false
+}
+
 // matches reports whether path hits any of the three matcher lists.
 // Names match every path segment, so a file inside an excluded
 // directory is excluded even when the event skips the walker's
