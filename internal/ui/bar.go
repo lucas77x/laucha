@@ -108,6 +108,10 @@ func New(cfg config.Config, deps Deps) *Bar {
 		Name:    "laucha",
 		Version: Version,
 		Icon:    appIcon,
+		// Every UI mutation from a background goroutine already goes
+		// through fyne.Do; declare the migration so Fyne stops logging
+		// the "not migrated" warning on every start.
+		Migrations: map[string]bool{"fyneDo": true},
 	})
 	b := &Bar{
 		app:     app.NewWithID("com.github.lucas77x.laucha"),
