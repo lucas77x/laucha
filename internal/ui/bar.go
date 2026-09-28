@@ -480,8 +480,7 @@ func open(entry launcher.Entry) error {
 		if isExecutable(entry.Path) {
 			cmd = exec.Command(entry.Path)
 			cmd.Dir = filepath.Dir(entry.Path)
-			cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-			if err := cmd.Start(); err == nil {
+			if err := startDetached(cmd); err == nil {
 				return nil
 			}
 			// Executable bit without an executable format (data files
@@ -490,8 +489,20 @@ func open(entry launcher.Entry) error {
 		}
 		cmd = exec.Command("xdg-open", entry.Path)
 	}
+	return startDetached(cmd)
+}
+
+// startDetached starts cmd in its own session, detached from laucha,
+// and reaps it in the background once it exits. Every open() branch
+// launches through this helper so a finished child never lingers as
+// a zombie until laucha itself exits.
+func startDetached(cmd *exec.Cmd) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	return cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go cmd.Wait()
+	return nil
 }
 
 // isExecutable reports whether path is a regular file with any
